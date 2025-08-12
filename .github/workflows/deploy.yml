@@ -26,7 +26,7 @@ jobs:
       - name: Build
         working-directory: ./frontend
         env:
-          BASE_PATH: '/personal-projects'
+          BASE_PATH: '/tango'
         run: npm run build
 
       - name: Upload Artifacts

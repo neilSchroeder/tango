@@ -13,7 +13,7 @@
 ### Step 1: Enable GitHub Pages in Repository Settings
 
 1. **Go to Your Repository on GitHub**
-   - Navigate to: `https://github.com/neilSchroeder/personal-projects`
+   - Navigate to: `https://github.com/neilSchroeder/tango`
 
 2. **Access Repository Settings**
    - Click the "Settings" tab in your repository
@@ -48,7 +48,7 @@ git push origin master
    - You'll see green checkmarks when successful
 
 3. **Access Your Live Site**
-   - Your game will be available at: `https://neilSchroeder.github.io/personal-projects/`
+   - Your game will be available at: `https://neilSchroeder.github.io/tango/`
 
 ## 🎮 Current Status
 
@@ -122,11 +122,11 @@ To make the game fully functional on GitHub Pages, we need to port the Python ga
 ## 🌐 Live URL Preview
 
 Once deployed, your game will be accessible at:
-**https://neilSchroeder.github.io/personal-projects/**
+**https://neilSchroeder.github.io/tango/**
 
 The URL structure follows GitHub Pages convention:
 - `neilSchroeder` - Your GitHub username
-- `personal-projects` - Your repository name
+- `tango` - Your repository name
 
 ## 🔧 Troubleshooting
 
@@ -148,10 +148,10 @@ The URL structure follows GitHub Pages convention:
 Execute these commands to go live:
 
 ```bash
-cd /home/nschroed/Documents/personal-projects/tango
+cd /home/nschroed/Documents/tango
 git add .
 git commit -m "Setup GitHub Pages deployment for Tango puzzle game"
-git push origin master
+git push origin main
 ```
 
 Then follow the repository settings steps above!

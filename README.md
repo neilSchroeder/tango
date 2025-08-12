@@ -200,8 +200,6 @@ The enhanced TangoBoardSolver implements a sophisticated constraint optimization
 - **Enhanced Learning**: Players develop stronger logical reasoning skills
 - **Cleaner Interface**: Reduced visual clutter from unnecessary constraints
 
-For detailed technical information, see [SOLVER_IMPROVEMENTS.md](SOLVER_IMPROVEMENTS.md).
-
 ## Contributing
 
 1. Fork the repository
