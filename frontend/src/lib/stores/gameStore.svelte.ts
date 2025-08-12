@@ -2,15 +2,57 @@
  * Game store using Svelte 5 runes for state management
  */
 
-import { GameApi, ApiError } from '../api/gameApi';
+import { GameService } from '../game/GameService';
+import { PieceType as LocalPieceType, ConstraintType as LocalConstraintType } from '../game/types';
 import type { 
   GameState, 
   MoveRequest, 
   MoveResponse,
-  PieceType, 
+  PieceType,
+  ConstraintType, 
   LeaderboardEntry,
   HintResponse
 } from '../api/types';
+
+// Local game service instance
+const gameService = new GameService();
+
+// Type conversion utilities
+function convertPieceTypeToLocal(piece: PieceType): LocalPieceType {
+  switch (piece) {
+    case 'empty': return LocalPieceType.EMPTY;
+    case 'sun': return LocalPieceType.SUN;
+    case 'moon': return LocalPieceType.MOON;
+    default: return LocalPieceType.EMPTY;
+  }
+}
+
+function convertPieceTypeFromLocal(piece: LocalPieceType): PieceType {
+  switch (piece) {
+    case LocalPieceType.EMPTY: return 'empty';
+    case LocalPieceType.SUN: return 'sun';
+    case LocalPieceType.MOON: return 'moon';
+    default: return 'empty';
+  }
+}
+
+function convertConstraintTypeToLocal(constraint: ConstraintType): LocalConstraintType {
+  switch (constraint) {
+    case 'none': return LocalConstraintType.NONE;
+    case 'same': return LocalConstraintType.SAME;
+    case 'different': return LocalConstraintType.DIFFERENT;
+    default: return LocalConstraintType.NONE;
+  }
+}
+
+function convertConstraintTypeFromLocal(constraint: LocalConstraintType): ConstraintType {
+  switch (constraint) {
+    case LocalConstraintType.NONE: return 'none';
+    case LocalConstraintType.SAME: return 'same';
+    case LocalConstraintType.DIFFERENT: return 'different';
+    default: return 'none';
+  }
+}
 
 interface GameStore {
   // Current game state
@@ -109,17 +151,26 @@ function createGameStore() {
       clearError();
       state.isCreatingGame = true;
       
-      const response = await GameApi.createGame();
-      state.currentGame = response.game_state;
-      state.elapsedTime = 0;
+      // Use local game service instead of API
+      const localGameState = gameService.newGame('standard');
       
+      // Convert local game state to API format
+      state.currentGame = {
+        game_id: crypto.randomUUID(),
+        board: localGameState.board.map(row => row.map(convertPieceTypeFromLocal)),
+        h_constraints: localGameState.hConstraints.map(row => row.map(convertConstraintTypeFromLocal)),
+        v_constraints: localGameState.vConstraints.map(row => row.map(convertConstraintTypeFromLocal)),
+        locked_tiles: localGameState.lockedTiles,
+        is_complete: localGameState.isComplete,
+        start_time: localGameState.startTime.toISOString(),
+        completion_time: localGameState.completionTime?.toISOString(),
+        moves_count: localGameState.moveCount
+      };
+      
+      state.elapsedTime = 0;
       startTimer();
     } catch (error) {
-      if (error instanceof ApiError) {
-        state.error = `Failed to create game: ${error.message}`;
-      } else {
-        state.error = 'An unexpected error occurred while creating the game';
-      }
+      state.error = error instanceof Error ? error.message : 'An unexpected error occurred while creating the game';
     } finally {
       state.isCreatingGame = false;
     }
@@ -136,55 +187,65 @@ function createGameStore() {
       clearHint(); // Clear any active hint when making a move
       state.isMakingMove = true;
       
-      const response = await GameApi.makeMove(state.currentGame.game_id, {
-        row,
-        col,
-        piece_type: pieceType
-      });
+      // Convert API format back to local format
+      const localGameState = {
+        gameId: state.currentGame.game_id,
+        board: state.currentGame.board.map(row => row.map(convertPieceTypeToLocal)),
+        hConstraints: state.currentGame.h_constraints.map(row => row.map(convertConstraintTypeToLocal)),
+        vConstraints: state.currentGame.v_constraints.map(row => row.map(convertConstraintTypeToLocal)),
+        lockedTiles: state.currentGame.locked_tiles,
+        isComplete: state.currentGame.is_complete,
+        isValid: true,
+        difficulty: 'standard',
+        startTime: new Date(state.currentGame.start_time),
+        completionTime: state.currentGame.completion_time ? new Date(state.currentGame.completion_time) : undefined,
+        moveCount: state.currentGame.moves_count
+      };
 
-      if (response.success && response.game_state) {
-        state.currentGame = response.game_state;
+      // Make the move using local service
+      const newLocalGameState = gameService.makeMove(localGameState, row, col, convertPieceTypeToLocal(pieceType));
+      
+      // Convert back to API format
+      state.currentGame = {
+        game_id: state.currentGame.game_id,
+        board: newLocalGameState.board.map(row => row.map(convertPieceTypeFromLocal)),
+        h_constraints: newLocalGameState.hConstraints.map(row => row.map(convertConstraintTypeFromLocal)),
+        v_constraints: newLocalGameState.vConstraints.map(row => row.map(convertConstraintTypeFromLocal)),
+        locked_tiles: newLocalGameState.lockedTiles,
+        is_complete: newLocalGameState.isComplete,
+        start_time: newLocalGameState.startTime.toISOString(),
+        completion_time: newLocalGameState.completionTime?.toISOString(),
+        moves_count: newLocalGameState.moveCount
+      };
+
+      // If game is complete, stop timer and save to leaderboard
+      if (newLocalGameState.isComplete) {
+        stopTimer();
         
-        // If game is complete, stop timer and refresh leaderboard
-        if (response.game_state.is_complete) {
-          stopTimer();
-          await loadLeaderboard();
-        }
-      } else {
-        state.error = response.message;
+        // Save to local leaderboard
+        const entry: LeaderboardEntry = {
+          time: state.elapsedTime,
+          date: new Date().toISOString(),
+          formatted_time: formattedTime
+        };
+        
+        const existingLeaderboard = JSON.parse(localStorage.getItem('tango-leaderboard') || '[]');
+        existingLeaderboard.push(entry);
+        existingLeaderboard.sort((a: LeaderboardEntry, b: LeaderboardEntry) => a.time - b.time);
+        localStorage.setItem('tango-leaderboard', JSON.stringify(existingLeaderboard.slice(0, 10)));
+        
+        // Reload leaderboard
+        await loadLeaderboard();
       }
 
-      // Update validation errors with delay
-      const newValidationErrors = response.validation_errors || [];
-      state.validationErrors = newValidationErrors;
+      // Clear validation errors since local game service validates moves
+      state.validationErrors = [];
+      state.delayedValidationErrors = [];
       
-      // Clear any existing error delay timeout
-      if (errorDelayTimeout) {
-        clearTimeout(errorDelayTimeout);
-      }
-      
-      // If there are new validation errors, show them after a delay
-      if (newValidationErrors.length > 0) {
-        // Clear delayed errors immediately when new errors come in
-        state.delayedValidationErrors = [];
-        
-        // Set the delayed errors after a short delay (750ms)
-        errorDelayTimeout = setTimeout(() => {
-          state.delayedValidationErrors = newValidationErrors;
-          errorDelayTimeout = null;
-        }, 750);
-      } else {
-        // No errors, clear delayed errors immediately
-        state.delayedValidationErrors = [];
-      }
-      
-      return response.success;
+      return true;
     } catch (error) {
-      if (error instanceof ApiError) {
-        state.error = `Move failed: ${error.message}`;
-      } else {
-        state.error = 'An unexpected error occurred while making the move';
-      }
+      state.error = error instanceof Error ? error.message : 'Move failed';
+      return false;
       return false;
     } finally {
       state.isMakingMove = false;
@@ -196,20 +257,11 @@ function createGameStore() {
       clearError();
       state.isLoading = true;
       
-      const gameState = await GameApi.getGameState(gameId);
-      state.currentGame = gameState;
-      
-      if (!gameState.is_complete) {
-        startTimer();
-      } else {
-        stopTimer();
-      }
+      // In static mode, we can't load external games
+      // This function is kept for compatibility but doesn't do anything
+      state.error = 'Loading saved games is not available in the static version';
     } catch (error) {
-      if (error instanceof ApiError) {
-        state.error = `Failed to load game: ${error.message}`;
-      } else {
-        state.error = 'An unexpected error occurred while loading the game';
-      }
+      state.error = error instanceof Error ? error.message : 'Failed to load game';
     } finally {
       state.isLoading = false;
     }
@@ -219,14 +271,11 @@ function createGameStore() {
     try {
       state.isLoadingLeaderboard = true;
       
-      const response = await GameApi.getLeaderboard();
-      state.leaderboard = response.entries;
+      // Load leaderboard from localStorage
+      const savedLeaderboard = localStorage.getItem('tango-leaderboard');
+      state.leaderboard = savedLeaderboard ? JSON.parse(savedLeaderboard) : [];
     } catch (error) {
-      if (error instanceof ApiError) {
-        state.error = `Failed to load leaderboard: ${error.message}`;
-      } else {
-        state.error = 'An unexpected error occurred while loading the leaderboard';
-      }
+      state.error = error instanceof Error ? error.message : 'Failed to load leaderboard';
     } finally {
       state.isLoadingLeaderboard = false;
     }
@@ -242,7 +291,33 @@ function createGameStore() {
       state.isLoadingHint = true;
       clearError();
       
-      const hintResponse = await GameApi.getHint(state.currentGame.game_id);
+      // Convert API format back to local format
+      const localGameState = {
+        gameId: state.currentGame.game_id,
+        board: state.currentGame.board.map(row => row.map(convertPieceTypeToLocal)),
+        hConstraints: state.currentGame.h_constraints.map(row => row.map(convertConstraintTypeToLocal)),
+        vConstraints: state.currentGame.v_constraints.map(row => row.map(convertConstraintTypeToLocal)),
+        lockedTiles: state.currentGame.locked_tiles,
+        isComplete: state.currentGame.is_complete,
+        isValid: true,
+        difficulty: 'standard',
+        startTime: new Date(state.currentGame.start_time),
+        completionTime: state.currentGame.completion_time ? new Date(state.currentGame.completion_time) : undefined,
+        moveCount: state.currentGame.moves_count
+      };
+      
+      // Get hint from local game service
+      const localHint = gameService.getHint(localGameState);
+      
+      // Convert to API format
+      const hintResponse: HintResponse = {
+        found: localHint.position !== undefined,
+        row: localHint.position?.row,
+        col: localHint.position?.col,
+        piece_type: localHint.suggestedPiece ? convertPieceTypeFromLocal(localHint.suggestedPiece) : undefined,
+        reasoning: localHint.reasoning || localHint.message
+      };
+      
       state.currentHint = hintResponse;
       
       if (hintResponse.found && hintResponse.row !== undefined && hintResponse.col !== undefined) {
@@ -254,11 +329,7 @@ function createGameStore() {
         }, 5000);
       }
     } catch (error) {
-      if (error instanceof ApiError) {
-        state.error = `Failed to get hint: ${error.message}`;
-      } else {
-        state.error = 'An unexpected error occurred while getting hint';
-      }
+      state.error = error instanceof Error ? error.message : 'Failed to get hint';
     } finally {
       state.isLoadingHint = false;
     }
