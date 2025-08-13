@@ -28,8 +28,8 @@
 
 <div class="game-board-container">
   {#if gameState.currentGame}
-    <div class="game-board bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg transition-colors duration-300">
-      <div class="grid grid-cols-6 gap-0">
+    <div class="game-board bg-white dark:bg-gray-800 p-3 sm:p-4 md:p-6 rounded-xl shadow-lg transition-colors duration-300">
+      <div class="grid grid-cols-6 gap-0 w-fit mx-auto">
         {#each Array(6) as _, row}
           {#each Array(6) as _, col}
             <GameTile
@@ -56,8 +56,8 @@
 
     <HintDisplay hint={gameState.currentHint} />
   {:else}
-    <div class="game-board bg-gray-200 p-8 rounded-lg text-center">
-      <p class="text-gray-600">No game loaded. Create a new game to start playing!</p>
+    <div class="game-board bg-gray-200 p-6 sm:p-8 rounded-lg text-center">
+      <p class="text-gray-600 text-sm sm:text-base">No game loaded. Create a new game to start playing!</p>
     </div>
   {/if}
 </div>
@@ -68,6 +68,9 @@
     width: fit-content;
     margin: 0 auto;
     transition: box-shadow 0.3s ease-in-out;
+    /* Ensure the board doesn't overflow on small screens */
+    max-width: 100%;
+    overflow: hidden;
   }
   
   .game-board:hover {
@@ -75,10 +78,24 @@
   }
   
   .game-board-container {
-    max-width: 600px;
+    max-width: 100%;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
     align-items: center;
+    /* Responsive max-width */
+    width: fit-content;
+  }
+
+  /* Ensure the game board is centered and properly sized on mobile */
+  @media (max-width: 640px) {
+    .game-board-container {
+      max-width: calc(100vw - 1rem);
+      padding: 0 0.5rem;
+    }
+    
+    .game-board {
+      max-width: calc(100vw - 2rem);
+    }
   }
 </style>

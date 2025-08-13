@@ -22,25 +22,25 @@
   <meta name="description" content="A challenging logic puzzle game with suns and moons" />
 </svelte:head>
 
-<main class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-gray-100 p-4 transition-colors duration-300">
+<main class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-gray-100 p-2 sm:p-4 transition-colors duration-300">
   <div class="container mx-auto max-w-7xl">
     <!-- Header -->
-    <header class="text-center mb-6 relative">
+    <header class="text-center mb-4 sm:mb-6 relative">
       <!-- Theme toggle in top right -->
       <div class="absolute top-0 right-0">
         <ThemeToggle />
       </div>
       
-      <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2 transition-colors duration-300">
+      <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2 transition-colors duration-300">
         🌞 Tango Puzzle 🌙
       </h1>
-      <p class="text-gray-600 dark:text-gray-400 text-sm transition-colors duration-300">
+      <p class="text-gray-600 dark:text-gray-400 text-xs sm:text-sm transition-colors duration-300">
         Place suns and moons following the rules to complete the puzzle
       </p>
     </header>
 
     <!-- Main game layout -->
-    <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-3 sm:gap-4 items-start">
       <!-- Game controls (left sidebar on large screens, top on mobile) -->
       <div class="lg:order-1 order-2 lg:col-span-1">
         <GameControls />
@@ -58,7 +58,7 @@
     </div>
 
     <!-- Footer -->
-    <footer class="text-center mt-8 text-xs text-gray-500 dark:text-gray-400 transition-colors duration-300">
+    <footer class="text-center mt-6 sm:mt-8 text-xs text-gray-500 dark:text-gray-400 transition-colors duration-300">
       <p>
         Built with SvelteKit and FastAPI | 
         <a 

@@ -1,6 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./src/**/*.{html,js,svelte,ts}'],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -15,6 +16,15 @@ export default {
       spacing: {
         '18': '4.5rem',
         '88': '22rem'
+      },
+      screens: {
+        'xs': '475px',
+      },
+      minWidth: {
+        '44': '44px',
+      },
+      minHeight: {
+        '44': '44px',
       }
     },
   },

@@ -9,9 +9,9 @@
 </script>
 
 {#if hint}
-  <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg transition-colors duration-200">
-    <h4 class="font-semibold text-blue-800 dark:text-blue-200 mb-2 transition-colors duration-200">💡 Hint</h4>
-    <p class="text-sm text-blue-700 dark:text-blue-300 transition-colors duration-200">
+  <div class="mt-3 sm:mt-4 p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg transition-colors duration-200">
+    <h4 class="font-semibold text-blue-800 dark:text-blue-200 mb-2 text-xs sm:text-sm transition-colors duration-200">💡 Hint</h4>
+    <p class="text-xs sm:text-sm text-blue-700 dark:text-blue-300 transition-colors duration-200">
       {hint.reasoning}
     </p>
     {#if hint.found && hint.row !== undefined && hint.col !== undefined}
