@@ -16,6 +16,8 @@ export interface GameState {
   start_time: string;
   completion_time?: string;
   moves_count: number;
+  constraintViolations?: Set<string>;
+  invalidStateTiles?: Set<string>;
 }
 
 export interface MoveRequest {

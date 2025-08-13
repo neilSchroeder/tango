@@ -16,8 +16,8 @@
   }
 </script>
 
-<div class="game-controls bg-white rounded-lg shadow-lg p-4">
-  <h2 class="text-md font-semibold mb-3 text-gray-800">Game Controls</h2>
+<div class="game-controls bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 transition-colors duration-300">
+  <h2 class="text-md font-semibold mb-3 text-gray-800 dark:text-gray-200 text-center transition-colors duration-300">Game Controls</h2>
   
   <div class="flex gap-3 justify-center flex-wrap">
     <button
@@ -70,9 +70,9 @@
   </div>
 
   <!-- Game instructions -->
-  <div class="mt-4 text-sm text-gray-600 space-y-2">
-    <h3 class="font-semibold text-gray-800 text-sm">How to Play:</h3>
-    <ul class="space-y-1 text-xs">
+  <div class="mt-4 text-sm text-gray-600 dark:text-gray-400 space-y-2 text-center transition-colors duration-300">
+    <h3 class="font-semibold text-gray-800 dark:text-gray-200 text-sm transition-colors duration-300">How to Play:</h3>
+    <ul class="space-y-1 text-xs text-left inline-block">
       <li>• Click tiles to cycle: Empty → ☀ → ☽ → Empty</li>
       <li>• Each row/column needs exactly 3 suns and 3 moons</li>
       <li>• No 3 consecutive identical pieces</li>
@@ -84,9 +84,9 @@
 
   <!-- Current game info -->
   {#if state.currentGame}
-    <div class="mt-3 p-2 bg-blue-50 rounded border border-blue-200">
-      <h4 class="font-semibold text-blue-800 text-xs">Game Info</h4>
-      <div class="text-xs text-blue-700 mt-1 space-y-1">
+    <div class="mt-3 p-2 bg-blue-50 dark:bg-blue-900/30 rounded border border-blue-200 dark:border-blue-700 text-center transition-colors duration-300">
+      <h4 class="font-semibold text-blue-800 dark:text-blue-300 text-xs transition-colors duration-300">Game Info</h4>
+      <div class="text-xs text-blue-700 dark:text-blue-400 mt-1 space-y-1 transition-colors duration-300">
         <div>ID: {state.currentGame.game_id.slice(0, 8)}...</div>
         <div>Status: {state.currentGame.is_complete ? 'Complete ✅' : 'In Progress ⏳'}</div>
       </div>
@@ -95,9 +95,9 @@
 
   <!-- Error display -->
   {#if state.error}
-    <div class="mt-3 p-2 bg-red-100 border border-red-300 rounded">
-      <div class="font-semibold text-red-800 text-xs">Error</div>
-      <div class="text-xs text-red-700 mt-1">{state.error}</div>
+    <div class="mt-3 p-2 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded text-center transition-colors duration-300">
+      <div class="font-semibold text-red-800 dark:text-red-300 text-xs transition-colors duration-300">Error</div>
+      <div class="text-xs text-red-700 dark:text-red-400 mt-1 transition-colors duration-300">{state.error}</div>
       <button
         class="mt-2 text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
         onclick={() => gameStore.clearError()}

@@ -7,6 +7,7 @@ export * from './types';
 export { TangoBoardSolver } from './TangoBoardSolver';
 export { PuzzleGenerator } from './PuzzleGenerator';
 export { GameService } from './GameService';
+export { GameLogic } from './GameLogic';
 
 // Re-export common types for convenience
 export { 

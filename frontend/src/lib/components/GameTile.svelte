@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { PieceType, ConstraintType } from '../api/types';
   import { gameStore } from '../stores/gameStore.svelte';
+  import { getPieceSymbol, getConstraintSymbol, getNextPiece } from '../utils/gameUtils';
 
-  // Props
   interface Props {
     row: number;
     col: number;
@@ -11,6 +11,7 @@
     horizontalConstraint?: ConstraintType;
     verticalConstraint?: ConstraintType;
     hasError?: boolean;
+    hasConstraintViolation?: boolean;
     isHinted?: boolean;
   }
   
@@ -22,77 +23,50 @@
     horizontalConstraint = 'none', 
     verticalConstraint = 'none',
     hasError = false,
+    hasConstraintViolation = false,
     isHinted = false
   }: Props = $props();
 
-  // Click cycle: empty -> sun -> moon -> empty
   async function handleClick() {
     if (isLocked || gameStore.state.isMakingMove) return;
-    
-    let nextPiece: PieceType;
-    switch (piece) {
-      case 'empty':
-        nextPiece = 'sun';
-        break;
-      case 'sun':
-        nextPiece = 'moon';
-        break;
-      case 'moon':
-        nextPiece = 'empty';
-        break;
-      default:
-        nextPiece = 'empty';
-    }
-    
+    const nextPiece = getNextPiece(piece);
     await gameStore.makeMove(row, col, nextPiece);
   }
 
-  function getConstraintSymbol(constraint: ConstraintType): string {
-    switch (constraint) {
-      case 'same': return '=';
-      case 'different': return '×';
-      default: return '';
-    }
-  }
-
-  function getPieceSymbol(piece: PieceType): string {
-    switch (piece) {
-      case 'sun': return '●';  // Solid circle for sun - can be styled with CSS color
-      case 'moon': return '◐'; // Half-moon symbol - can be styled with CSS color
-      default: return '';
-    }
-  }
+  // Compute CSS classes
+  const tileClasses = $derived(() => {
+    let classes = ['game-tile'];
+    
+    if (piece === 'sun') classes.push('game-tile--sun');
+    if (piece === 'moon') classes.push('game-tile--moon');
+    if (hasConstraintViolation) classes.push('game-tile--constraint-violation');
+    else if (hasError) classes.push('game-tile--error');
+    if (isHinted) classes.push('game-tile--hinted');
+    
+    return classes.join(' ');
+  });
 </script>
 
 <div class="relative">
-  <!-- Main tile -->
   <button
-    class="game-tile {piece === 'sun' ? 'game-tile-sun' : ''} {piece === 'moon' ? 'game-tile-moon' : ''} {isLocked ? 'game-tile-locked' : ''} {hasError ? 'game-tile-error' : ''} {isHinted ? 'game-tile-hinted' : ''}"
+    class={tileClasses()}
     onclick={handleClick}
     disabled={isLocked || gameStore.state.isMakingMove}
     aria-label="Game tile at row {row + 1}, column {col + 1}: {piece}"
   >
-    <span class="game-piece">  <!-- Using custom CSS class for precise piece size control -->
+    <span class="game-piece">
       {getPieceSymbol(piece)}
     </span>
   </button>
 
-  <!-- Horizontal constraint (to the right) -->
   {#if horizontalConstraint !== 'none'}
-    <div 
-      class="constraint-horizontal absolute top-1/2 transform -translate-y-1/2"
-      style="right: -0.875rem;"
-    >
+    <div class="constraint constraint--horizontal">
       {getConstraintSymbol(horizontalConstraint)}
     </div>
   {/if}
 
-  <!-- Vertical constraint (below) -->
   {#if verticalConstraint !== 'none'}
-    <div 
-      class="constraint-vertical absolute left-1/2 transform -translate-x-1/2"
-      style="bottom: -0.875rem;"
-    >
+    <div class="constraint constraint--vertical">
       {getConstraintSymbol(verticalConstraint)}
     </div>
   {/if}

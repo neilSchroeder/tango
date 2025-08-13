@@ -3,6 +3,7 @@
   import GameBoard from '$lib/components/GameBoard.svelte';
   import GameControls from '$lib/components/GameControls.svelte';
   import Leaderboard from '$lib/components/Leaderboard.svelte';
+  import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import { gameStore } from '$lib/stores/gameStore.svelte';
 
   // Load leaderboard on mount
@@ -21,14 +22,19 @@
   <meta name="description" content="A challenging logic puzzle game with suns and moons" />
 </svelte:head>
 
-<main class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+<main class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-gray-100 p-4 transition-colors duration-300">
   <div class="container mx-auto max-w-7xl">
     <!-- Header -->
-    <header class="text-center mb-6">
-      <h1 class="text-3xl font-bold text-gray-800 mb-2">
+    <header class="text-center mb-6 relative">
+      <!-- Theme toggle in top right -->
+      <div class="absolute top-0 right-0">
+        <ThemeToggle />
+      </div>
+      
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2 transition-colors duration-300">
         🌞 Tango Puzzle 🌙
       </h1>
-      <p class="text-gray-600 text-sm">
+      <p class="text-gray-600 dark:text-gray-400 text-sm transition-colors duration-300">
         Place suns and moons following the rules to complete the puzzle
       </p>
     </header>
@@ -52,12 +58,12 @@
     </div>
 
     <!-- Footer -->
-    <footer class="text-center mt-8 text-xs text-gray-500">
+    <footer class="text-center mt-8 text-xs text-gray-500 dark:text-gray-400 transition-colors duration-300">
       <p>
         Built with SvelteKit and FastAPI | 
         <a 
           href="https://github.com" 
-          class="text-blue-500 hover:text-blue-700 underline"
+          class="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline transition-colors duration-200"
           target="_blank"
           rel="noopener noreferrer"
         >

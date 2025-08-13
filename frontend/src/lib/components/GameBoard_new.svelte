@@ -28,7 +28,7 @@
 
 <div class="game-board-container">
   {#if gameState.currentGame}
-    <div class="game-board bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg transition-colors duration-300">
+    <div class="game-board bg-white p-6 rounded-xl shadow-lg">
       <div class="grid grid-cols-6 gap-0">
         {#each Array(6) as _, row}
           {#each Array(6) as _, col}

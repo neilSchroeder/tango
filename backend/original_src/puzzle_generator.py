@@ -40,6 +40,10 @@ class PuzzleGenerator:
                 print("Successfully generated a puzzle.")
                 return game  # Success!
 
+        # If all attempts failed, fall back to simple puzzle generation
+        print("Standard generation failed, falling back to simple puzzle generation.")
+        return self.generate_simple_puzzle()
+
     def _generate_solution(self, game: GameLogic) -> bool:
         """Generate a complete valid solution using backtracking."""
         empty_cells = []
@@ -767,4 +771,132 @@ class PuzzleGenerator:
 
                 # If either piece is empty, remove the constraint
                 if piece1 == PieceType.EMPTY or piece2 == PieceType.EMPTY:
+                    game.set_vertical_constraint(row, col, ConstraintType.NONE)
+
+        # Step 4c: Remove redundant constraints where row/column completion forces choices
+        self._remove_redundant_constraints(game)
+
+        # Step 4d: Remove constraints between pre-placed pieces (not useful to player)
+        self._remove_constraints_between_preplaced_pieces(game)
+
+    def _remove_redundant_constraints(self, game: GameLogic):
+        """Remove constraints that are redundant due to row/column completion rules."""
+        # Check each row and column for completion scenarios
+        for i in range(self.size):
+            # Check row i
+            suns_in_row, moons_in_row = game.count_pieces_in_row(i)
+
+            # If row already has 3 suns, all remaining empty cells must be moons
+            if suns_in_row == MAX_PIECES_PER_ROW_COL:
+                self._remove_redundant_constraints_in_row(game, i, PieceType.MOON)
+            # If row already has 3 moons, all remaining empty cells must be suns
+            elif moons_in_row == MAX_PIECES_PER_ROW_COL:
+                self._remove_redundant_constraints_in_row(game, i, PieceType.SUN)
+
+            # Check column i
+            suns_in_col, moons_in_col = game.count_pieces_in_column(i)
+
+            # If column already has 3 suns, all remaining empty cells must be moons
+            if suns_in_col == MAX_PIECES_PER_ROW_COL:
+                self._remove_redundant_constraints_in_column(game, i, PieceType.MOON)
+            # If column already has 3 moons, all remaining empty cells must be suns
+            elif moons_in_col == MAX_PIECES_PER_ROW_COL:
+                self._remove_redundant_constraints_in_column(game, i, PieceType.SUN)
+
+    def _remove_redundant_constraints_in_row(
+        self, game: GameLogic, row: int, forced_type: PieceType
+    ):
+        """Remove constraints in a row where empty cells are forced to be a specific type."""
+        for col in range(self.size - 1):
+            piece1 = game.get_piece(row, col)
+            piece2 = game.get_piece(row, col + 1)
+
+            # If both positions are empty and will be forced to the same type, remove DIFFERENT constraints
+            if (
+                piece1 == PieceType.EMPTY
+                and piece2 == PieceType.EMPTY
+                and game.get_horizontal_constraint(row, col) == ConstraintType.DIFFERENT
+            ):
+                game.set_horizontal_constraint(row, col, ConstraintType.NONE)
+
+            # If one position is empty (will be forced) and other is filled with same type, remove DIFFERENT constraints
+            elif (piece1 == PieceType.EMPTY and piece2 == forced_type) or (
+                piece1 == forced_type and piece2 == PieceType.EMPTY
+            ):
+                if game.get_horizontal_constraint(row, col) == ConstraintType.DIFFERENT:
+                    game.set_horizontal_constraint(row, col, ConstraintType.NONE)
+
+            # If one position is empty (will be forced) and other is filled with different type, remove SAME constraints
+            elif (
+                piece1 == PieceType.EMPTY
+                and piece2 != PieceType.EMPTY
+                and piece2 != forced_type
+            ) or (
+                piece1 != PieceType.EMPTY
+                and piece1 != forced_type
+                and piece2 == PieceType.EMPTY
+            ):
+                if game.get_horizontal_constraint(row, col) == ConstraintType.SAME:
+                    game.set_horizontal_constraint(row, col, ConstraintType.NONE)
+
+    def _remove_redundant_constraints_in_column(
+        self, game: GameLogic, col: int, forced_type: PieceType
+    ):
+        """Remove constraints in a column where empty cells are forced to be a specific type."""
+        for row in range(self.size - 1):
+            piece1 = game.get_piece(row, col)
+            piece2 = game.get_piece(row + 1, col)
+
+            # If both positions are empty and will be forced to the same type, remove DIFFERENT constraints
+            if (
+                piece1 == PieceType.EMPTY
+                and piece2 == PieceType.EMPTY
+                and game.get_vertical_constraint(row, col) == ConstraintType.DIFFERENT
+            ):
+                game.set_vertical_constraint(row, col, ConstraintType.NONE)
+
+            # If one position is empty (will be forced) and other is filled with same type, remove DIFFERENT constraints
+            elif (piece1 == PieceType.EMPTY and piece2 == forced_type) or (
+                piece1 == forced_type and piece2 == PieceType.EMPTY
+            ):
+                if game.get_vertical_constraint(row, col) == ConstraintType.DIFFERENT:
+                    game.set_vertical_constraint(row, col, ConstraintType.NONE)
+
+            # If one position is empty (will be forced) and other is filled with different type, remove SAME constraints
+            elif (
+                piece1 == PieceType.EMPTY
+                and piece2 != PieceType.EMPTY
+                and piece2 != forced_type
+            ) or (
+                piece1 != PieceType.EMPTY
+                and piece1 != forced_type
+                and piece2 == PieceType.EMPTY
+            ):
+                if game.get_vertical_constraint(row, col) == ConstraintType.SAME:
+                    game.set_vertical_constraint(row, col, ConstraintType.NONE)
+
+    def _remove_constraints_between_preplaced_pieces(self, game: GameLogic):
+        """Remove constraints that exist between two pre-placed (non-empty) pieces.
+
+        These constraints are not useful to the player since both pieces are already
+        visible and the relationship is obvious.
+        """
+        # Check horizontal constraints
+        for row in range(self.size):
+            for col in range(self.size - 1):
+                piece1 = game.get_piece(row, col)
+                piece2 = game.get_piece(row, col + 1)
+
+                # If both pieces are pre-placed (not empty), remove any constraint between them
+                if piece1 != PieceType.EMPTY and piece2 != PieceType.EMPTY:
+                    game.set_horizontal_constraint(row, col, ConstraintType.NONE)
+
+        # Check vertical constraints
+        for row in range(self.size - 1):
+            for col in range(self.size):
+                piece1 = game.get_piece(row, col)
+                piece2 = game.get_piece(row + 1, col)
+
+                # If both pieces are pre-placed (not empty), remove any constraint between them
+                if piece1 != PieceType.EMPTY and piece2 != PieceType.EMPTY:
                     game.set_vertical_constraint(row, col, ConstraintType.NONE)

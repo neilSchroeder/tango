@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  html {
+    background-color: #ffffff;
+    color: #111827;
+  }
+  
+  html.dark {
+    background-color: #111827;
+    color: #f9fafb;
+  }
+  
+  body {
+    background-color: transparent;
+    color: inherit;
+  }
+}
+
 /* Game piece size variables - easily adjustable */
 :root {
   --tile-size: 5rem;
@@ -13,14 +30,62 @@
   --sun-color: #f59e0b;      /* Amber/yellow for sun */
   --moon-color: #1d4ed8;     /* Deep blue for moon */
   --moon-hover-bg: #dbeafe; /* Light blue background for moon hover */
+
+  /* Light theme colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-tertiary: #f3f4f6;
+  --bg-gradient-from: #dbeafe;
+  --bg-gradient-to: #e0e7ff;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
+  --border-primary: #d1d5db;
+  --border-secondary: #6b7280;
+  --border-hover: #9ca3af;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --error-bg: rgba(254, 202, 202, 0.6);
+  --error-border: rgba(248, 113, 113, 0.7);
+  --error-shadow: rgba(248, 113, 113, 0.2);
+  --constraint-violation-bg: rgba(239, 68, 68, 0.4);
+  --constraint-violation-border: rgba(220, 38, 38, 0.6);
+  --constraint-violation-shadow: rgba(220, 38, 38, 0.25);
+  --hint-bg: #dbeafe;
+  --hint-border: #3b82f6;
+  --hint-shadow: rgba(59, 130, 246, 0.5);
+}
+
+/* Dark theme colors */
+:root.dark {
+  --bg-primary: #1f2937;
+  --bg-secondary: #111827;
+  --bg-tertiary: #374151;
+  --bg-gradient-from: #1f2937;
+  --bg-gradient-to: #111827;
+  --text-primary: #f9fafb;
+  --text-secondary: #d1d5db;
+  --text-tertiary: #9ca3af;
+  --border-primary: #4b5563;
+  --border-secondary: #6b7280;
+  --border-hover: #9ca3af;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --error-bg: rgba(127, 29, 29, 0.6);
+  --error-border: rgba(185, 28, 28, 0.7);
+  --error-shadow: rgba(185, 28, 28, 0.2);
+  --constraint-violation-bg: rgba(153, 27, 27, 0.4);
+  --constraint-violation-border: rgba(153, 27, 27, 0.6);
+  --constraint-violation-shadow: rgba(153, 27, 27, 0.25);
+  --hint-bg: #1e40af;
+  --hint-border: #3b82f6;
+  --hint-shadow: rgba(59, 130, 246, 0.5);
 }
 
 /* Custom styles for Tango game */
 .game-tile {
   width: var(--tile-size);
   height: var(--tile-size);
-  border: 2px solid #d1d5db;
-  background-color: white;
+  border: 2px solid var(--border-primary);
+  background-color: var(--bg-primary);
   cursor: pointer;
   transition: all 0.2s ease-in-out;
   display: flex;
@@ -28,152 +93,153 @@
   justify-content: center;
   font-size: var(--tile-font-size);
   border-radius: var(--tile-border-radius);
-}
-
-/* Game piece symbol styling */
-.game-piece {
-  font-size: var(--piece-size);
-  line-height: 1;
-  user-select: none;
+  position: relative;
 }
 
 .game-tile:hover:not(:disabled) {
-  border-color: #6b7280;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  border-color: var(--border-hover);
+  box-shadow: 0 4px 8px var(--shadow-color);
   transform: translateY(-1px);
-  background-color: #fafafa;
+  background-color: var(--bg-secondary);
 }
 
 .game-tile:disabled {
   cursor: not-allowed;
+  background-color: var(--bg-secondary);
+  border-color: var(--border-secondary);
 }
 
-.game-tile-locked {
-  background-color: #f9fafb;
-  border-color: #6b7280;
-}
-
-.game-tile-locked:hover {
+.game-tile:disabled:hover {
   transform: none;
   box-shadow: none;
-  background-color: #f9fafb;
 }
 
-.game-tile-sun {
-  background-color: #ffffff;
-  border-color: #d1d5db;
+/* Game piece styling */
+.game-piece {
+  font-size: var(--piece-size);
+  line-height: 1;
+  user-select: none;
+  font-weight: bold;
+}
+
+/* Piece type styling */
+.game-tile--sun {
   color: var(--sun-color);
 }
 
-.game-tile-sun:hover:not(:disabled) {
+.game-tile--sun:hover:not(:disabled) {
   background-color: #fffbeb;
   border-color: var(--sun-color);
 }
 
-.game-tile-moon {
-  background-color: #ffffff;
-  border-color: #d1d5db;
-  color: var(--moon-color);  /* Using CSS variable for deep blue */
+.game-tile--moon {
+  color: var(--moon-color);
 }
 
-.game-tile-moon:hover:not(:disabled) {
-  background-color: var(--moon-hover-bg);  /* Using CSS variable for light blue background */
-  border-color: var(--moon-color);         /* Using CSS variable for deep blue border */
+.game-tile--moon:hover:not(:disabled) {
+  background-color: var(--moon-hover-bg);
+  border-color: var(--moon-color);
 }
 
-.game-tile-error {
-  background-color: #fecaca !important;
-  border: 2px solid #dc2626 !important;
-  box-shadow: 0 0 10px rgba(220, 38, 38, 0.3) !important;
-  transition: all 0.4s ease-in-out !important;
-  animation: error-appear 0.4s ease-out;
+/* Dark mode adjustments for piece hover states */
+:root.dark .game-tile--sun:hover:not(:disabled) {
+  background-color: rgba(251, 191, 36, 0.2);
 }
 
-@keyframes error-appear {
-  0% {
-    background-color: white;
-    border-color: #d1d5db;
-    box-shadow: none;
-  }
-  100% {
-    background-color: #fecaca;
-    border-color: #dc2626;
-    box-shadow: 0 0 10px rgba(220, 38, 38, 0.3);
-  }
+:root.dark .game-tile--moon:hover:not(:disabled) {
+  background-color: rgba(29, 78, 216, 0.3);
 }
 
-.game-tile-hinted {
-  background-color: #dbeafe !important;
-  border: 2px solid #3b82f6 !important;
-  box-shadow: 0 0 15px rgba(59, 130, 246, 0.5) !important;
-  animation: pulse-hint 2s infinite;
+/* Error state styling */
+.game-tile--error {
+  background-color: var(--error-bg) !important;
+  border-color: var(--error-border) !important;
+  box-shadow: 0 0 8px var(--error-shadow) !important;
+  animation: error-pulse 0.4s ease-out;
 }
 
-@keyframes pulse-hint {
-  0%, 100% {
-    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
-  }
-  50% {
-    box-shadow: 0 0 25px rgba(59, 130, 246, 0.8);
-  }
+.game-tile--constraint-violation {
+  background-color: var(--constraint-violation-bg) !important;
+  border-color: var(--constraint-violation-border) !important;
+  box-shadow: 0 0 10px var(--constraint-violation-shadow) !important;
+  animation: error-pulse 0.4s ease-out;
 }
 
-.constraint-horizontal {
+.game-tile--hinted {
+  background-color: var(--hint-bg) !important;
+  border-color: var(--hint-border) !important;
+  box-shadow: 0 0 15px var(--hint-shadow) !important;
+  animation: hint-pulse 2s infinite;
+}
+
+@keyframes error-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes hint-pulse {
+  0%, 100% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); }
+  50% { box-shadow: 0 0 25px rgba(59, 130, 246, 0.8); }
+}
+
+/* Constraint styling */
+.constraint {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: bold;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 0.25rem;
+  z-index: 10;
+  transition: transform 0.2s ease-in-out;
+  cursor: default;
+}
+
+.constraint:hover {
+  transform: scale(1.1);
+  background-color: var(--bg-secondary);
+  border-color: var(--border-secondary);
+  box-shadow: 0 2px 4px var(--shadow-color);
+}
+
+.constraint--horizontal {
   width: 1.5rem;
   height: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.875rem;
-  font-weight: bold;
-  color: #000000;
-  background-color: white;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
-  z-index: 10;
-  transition: all 0.2s ease-in-out;
-  cursor: default;
+  top: 50%;
+  right: -0.875rem;
+  transform: translateY(-50%);
 }
 
-.constraint-horizontal:hover {
-  transform: scale(1.1);
-  background-color: #f9fafb;
-  border-color: #6b7280;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.constraint--horizontal:hover {
+  transform: translateY(-50%) scale(1.1);
 }
 
-.constraint-vertical {
+.constraint--vertical {
   width: 1rem;
   height: 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.875rem;
-  font-weight: bold;
-  color: #000000;
-  background-color: white;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
-  z-index: 10;
-  transition: all 0.2s ease-in-out;
-  cursor: default;
+  bottom: -0.875rem;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
-.constraint-vertical:hover {
-  transform: scale(1.1);
-  background-color: #f9fafb;
-  border-color: #6b7280;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.constraint--vertical:hover {
+  transform: translateX(-50%) scale(1.1);
 }
 
 .constraint-same {
-  color: #000000;
+  color: var(--text-primary);
 }
 
 .constraint-different {
-  color: #000000;
+  color: var(--text-primary);
 }
 
+/* Button styling */
 .game-button {
   padding: 0.5rem 0.75rem;
   background-color: #3b82f6;
@@ -192,27 +258,4 @@
 .game-button:disabled {
   background-color: #d1d5db;
   cursor: not-allowed;
-}
-
-.leaderboard-entry {
-  padding: 0.5rem;
-  border-bottom: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-/* Piece styling for consistent appearance */
-.piece-sun, .piece-moon {
-  color: #000000;
-  font-weight: 600;
-  font-size: 1.5rem;
-}
-
-/* Ensure pieces are visible and properly styled */
-.game-tile .piece {
-  color: #000000;
-  font-weight: 600;
-  font-size: 1.8rem;
-  line-height: 1;
 }

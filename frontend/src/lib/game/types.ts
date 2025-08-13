@@ -27,6 +27,9 @@ export interface GameState {
   startTime: Date;
   completionTime?: Date;
   moveCount: number;
+  validationErrors?: string[];
+  constraintViolations?: Set<string>;
+  invalidStateTiles?: Set<string>;
 }
 
 export interface GameValidationResult {
@@ -96,6 +99,22 @@ export interface PuzzleConfig {
 
 // Board size constant
 export const BOARD_SIZE = 6;
+
+// Game Logic Constants (from Python config.py)
+export const MAX_PIECES_PER_ROW_COL = 3; // Maximum suns or moons per row/column
+export const CONSECUTIVE_LIMIT = 3; // Maximum consecutive same pieces allowed
+
+// Puzzle Generation Constants
+export const CONSTRAINT_PROBABILITY = 0.25; // Probability of placing a constraint (0.0-1.0)
+export const CONSTRAINT_PROBABILITY_FALLBACK = 0.3; // Fallback probability for main generator
+
+// Piece removal probabilities for puzzle generation
+export const REMOVAL_PROB_WITH_CONSTRAINTS = 0.9; // Probability to remove piece that has constraints
+export const REMOVAL_PROB_WITHOUT_CONSTRAINTS = 0.9; // Probability to remove piece without constraints
+
+// Puzzle difficulty settings (for main generator)
+export const MIN_PIECES_TO_REMOVE = 36 - 10; // Minimum pieces to remove from solved puzzle
+export const MAX_PIECES_TO_REMOVE = 36 - 1; // Maximum pieces to remove from solved puzzle
 
 // Utility functions for type conversions
 export function pieceTypeFromString(str: string): PieceType {

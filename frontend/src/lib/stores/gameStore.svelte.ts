@@ -164,7 +164,9 @@ function createGameStore() {
         is_complete: localGameState.isComplete,
         start_time: localGameState.startTime.toISOString(),
         completion_time: localGameState.completionTime?.toISOString(),
-        moves_count: localGameState.moveCount
+        moves_count: localGameState.moveCount,
+        constraintViolations: new Set(),
+        invalidStateTiles: new Set()
       };
       
       state.elapsedTime = 0;
@@ -205,6 +207,10 @@ function createGameStore() {
       // Make the move using local service
       const newLocalGameState = gameService.makeMove(localGameState, row, col, convertPieceTypeToLocal(pieceType));
       
+      // Set validation errors for highlighting
+      state.validationErrors = newLocalGameState.validationErrors || [];
+      state.delayedValidationErrors = newLocalGameState.validationErrors || [];
+      
       // Convert back to API format
       state.currentGame = {
         game_id: state.currentGame.game_id,
@@ -215,12 +221,18 @@ function createGameStore() {
         is_complete: newLocalGameState.isComplete,
         start_time: newLocalGameState.startTime.toISOString(),
         completion_time: newLocalGameState.completionTime?.toISOString(),
-        moves_count: newLocalGameState.moveCount
+        moves_count: newLocalGameState.moveCount,
+        constraintViolations: newLocalGameState.constraintViolations,
+        invalidStateTiles: newLocalGameState.invalidStateTiles
       };
 
       // If game is complete, stop timer and save to leaderboard
       if (newLocalGameState.isComplete) {
         stopTimer();
+        
+        // Clear validation errors when game is complete
+        state.validationErrors = [];
+        state.delayedValidationErrors = [];
         
         // Save to local leaderboard
         const entry: LeaderboardEntry = {
@@ -238,10 +250,6 @@ function createGameStore() {
         await loadLeaderboard();
       }
 
-      // Clear validation errors since local game service validates moves
-      state.validationErrors = [];
-      state.delayedValidationErrors = [];
-      
       return true;
     } catch (error) {
       state.error = error instanceof Error ? error.message : 'Move failed';
