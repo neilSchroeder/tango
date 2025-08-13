@@ -1,17 +1,17 @@
 <script lang="ts">
   import { gameStore } from '../stores/gameStore.svelte';
+  import { errorStore } from '../stores/errorStore.svelte';
   import GameTile from './GameTile.svelte';
   import GameStatus from './GameStatus.svelte';
   import HintDisplay from './HintDisplay.svelte';
-  import { ErrorHighlightManager } from '../utils/errorManager';
   import type { ConstraintType } from '../api/types';
 
   const { state: gameState } = gameStore;
-  const errorManager = new ErrorHighlightManager();
 
   // Update error highlights when game state changes
   $effect(() => {
-    errorManager.updateErrorHighlights(gameState.currentGame);
+    console.log('🔄 GameBoard effect triggered - updating error store');
+    errorStore.updateErrors(gameState.currentGame);
   });
 
   function getConstraint(constraints: ConstraintType[][], row: number, col: number, maxIndex: number): ConstraintType {
@@ -39,8 +39,8 @@
               isLocked={gameState.currentGame.locked_tiles[row][col]}
               horizontalConstraint={getConstraint(gameState.currentGame.h_constraints, row, col, 4)}
               verticalConstraint={getConstraint(gameState.currentGame.v_constraints, row, col, 4)}
-              hasError={errorManager.hasError(row, col)}
-              hasConstraintViolation={errorManager.hasConstraintViolation(row, col)}
+              hasError={errorStore.hasError(row, col)}
+              hasConstraintViolation={errorStore.hasConstraintViolation(row, col)}
               isHinted={isHinted(row, col)}
             />
           {/each}

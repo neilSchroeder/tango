@@ -21,11 +21,20 @@ export class ErrorHighlightManager {
     const currentViolations = gameState?.constraintViolations || new Set();
     const currentInvalidTiles = gameState?.invalidStateTiles || new Set();
 
+    // Debug logging
+    console.log(`🔍 Updating error highlights:`, {
+      constraintViolations: Array.from(currentViolations),
+      invalidStateTiles: Array.from(currentInvalidTiles),
+      delayedViolations: Array.from(this.delayedViolations),
+      delayedInvalidTiles: Array.from(this.delayedInvalidTiles)
+    });
+
     // Clear resolved violations immediately
     this.clearResolvedViolations(currentViolations, currentInvalidTiles);
 
     // If no violations, clear all highlights
     if (currentViolations.size === 0 && currentInvalidTiles.size === 0) {
+      console.log('🧹 Clearing all highlights - no violations');
       this.delayedViolations.clear();
       this.delayedInvalidTiles.clear();
       return;
@@ -34,6 +43,11 @@ export class ErrorHighlightManager {
     // Find new violations
     const newViolations = this.getNewViolations(currentViolations, this.previousViolations);
     const newInvalidTiles = this.getNewViolations(currentInvalidTiles, this.previousInvalidTiles);
+
+    console.log(`🆕 New violations detected:`, {
+      newViolations,
+      newInvalidTiles
+    });
 
     // Set delayed highlighting for new violations
     if (newViolations.length > 0 || newInvalidTiles.length > 0) {
@@ -47,7 +61,15 @@ export class ErrorHighlightManager {
 
   hasError(row: number, col: number): boolean {
     const tileId = createTileId(row, col);
-    return this.delayedViolations.has(tileId) || this.delayedInvalidTiles.has(tileId);
+    const hasViolation = this.delayedViolations.has(tileId);
+    const hasInvalid = this.delayedInvalidTiles.has(tileId);
+    
+    // Debug logging
+    if (hasViolation || hasInvalid) {
+      console.log(`❌ Error highlighting for tile ${tileId}: violation=${hasViolation}, invalid=${hasInvalid}`);
+    }
+    
+    return hasViolation || hasInvalid;
   }
 
   hasConstraintViolation(row: number, col: number): boolean {
@@ -78,18 +100,29 @@ export class ErrorHighlightManager {
     currentViolations: Set<string>,
     currentInvalidTiles: Set<string>
   ): void {
+    console.log(`⏳ Setting delayed highlighting for ${newViolations.length} violations and ${newInvalidTiles.length} invalid tiles`);
+    
     this.highlightTimeout = setTimeout(() => {
+      console.log(`✨ Applying delayed highlighting after 1.5s delay`);
+      
       newViolations.forEach(v => {
         if (currentViolations.has(v)) {
+          console.log(`🔴 Adding constraint violation highlight: ${v}`);
           this.delayedViolations.add(v);
         }
       });
 
       newInvalidTiles.forEach(v => {
         if (currentInvalidTiles.has(v)) {
+          console.log(`🟡 Adding invalid state highlight: ${v}`);
           this.delayedInvalidTiles.add(v);
         }
       });
-    }, 1500);
+      
+      console.log(`📊 Final delayed state:`, {
+        delayedViolations: Array.from(this.delayedViolations),
+        delayedInvalidTiles: Array.from(this.delayedInvalidTiles)
+      });
+    }, 0);
   }
 }

@@ -1557,9 +1557,17 @@ export class TangoBoardSolver {
     board[row][col] = PieceType.EMPTY; // Reset
 
     if (reasons.length > 0) {
-      return `Only ${piece} is valid at position (${row + 1}, ${col + 1}) because ${reasons[0]}.`;
+      // Combine all reasons for a comprehensive explanation
+      if (reasons.length === 1) {
+        return `Only ${piece} is valid at position (${row + 1}, ${col + 1}) because ${reasons[0]}.`;
+      } else {
+        const allButLast = reasons.slice(0, -1).join(', ');
+        const last = reasons[reasons.length - 1];
+        return `Only ${piece} is valid at position (${row + 1}, ${col + 1}) because ${allButLast}, and ${last}.`;
+      }
     } else {
-      return `Only ${piece} is valid at position (${row + 1}, ${col + 1}) based on the current board state and game rules.`;
+      // If no specific violation was found, provide general validation logic
+      return `Only ${piece} is valid at position (${row + 1}, ${col + 1}) based on the current board state and game rules. Placing ${otherPiece} would violate one or more game constraints.`;
     }
   }
 
@@ -1612,16 +1620,20 @@ export class TangoBoardSolver {
     const colCounts = this.countPiecesInColumn(board, col);
     
     if (piece === PieceType.SUN && rowCounts.suns > MAX_PIECES_PER_ROW_COL) {
-      return `placing sun would give row ${row + 1} a total of ${rowCounts.suns} suns, exceeding the maximum of 3 per row`;
+      const sunPositions = this.getSunPositionsInRow(board, row);
+      return `placing sun would give row ${row + 1} a total of ${rowCounts.suns} suns (currently at ${sunPositions.join(', ')}), exceeding the maximum of 3 per row`;
     }
     if (piece === PieceType.MOON && rowCounts.moons > MAX_PIECES_PER_ROW_COL) {
-      return `placing moon would give row ${row + 1} a total of ${rowCounts.moons} moons, exceeding the maximum of 3 per row`;
+      const moonPositions = this.getMoonPositionsInRow(board, row);
+      return `placing moon would give row ${row + 1} a total of ${rowCounts.moons} moons (currently at ${moonPositions.join(', ')}), exceeding the maximum of 3 per row`;
     }
     if (piece === PieceType.SUN && colCounts.suns > MAX_PIECES_PER_ROW_COL) {
-      return `placing sun would give column ${col + 1} a total of ${colCounts.suns} suns, exceeding the maximum of 3 per column`;
+      const sunPositions = this.getSunPositionsInCol(board, col);
+      return `placing sun would give column ${col + 1} a total of ${colCounts.suns} suns (currently at ${sunPositions.join(', ')}), exceeding the maximum of 3 per column`;
     }
     if (piece === PieceType.MOON && colCounts.moons > MAX_PIECES_PER_ROW_COL) {
-      return `placing moon would give column ${col + 1} a total of ${colCounts.moons} moons, exceeding the maximum of 3 per column`;
+      const moonPositions = this.getMoonPositionsInCol(board, col);
+      return `placing moon would give column ${col + 1} a total of ${colCounts.moons} moons (currently at ${moonPositions.join(', ')}), exceeding the maximum of 3 per column`;
     }
 
     return null;
@@ -1636,10 +1648,10 @@ export class TangoBoardSolver {
       const leftPiece = board[row][col - 1];
       
       if (leftConstraint === ConstraintType.SAME && leftPiece !== PieceType.EMPTY && currentPiece !== leftPiece) {
-        return `placing ${currentPiece} would violate the '=' constraint at position (${row + 1}, ${col}) requiring it to match the ${leftPiece} to its left`;
+        return `placing ${currentPiece} would violate the '=' constraint between positions (${row + 1}, ${col}) and (${row + 1}, ${col + 1}) requiring it to match the ${leftPiece} to its left`;
       }
       if (leftConstraint === ConstraintType.DIFFERENT && leftPiece !== PieceType.EMPTY && currentPiece === leftPiece) {
-        return `placing ${currentPiece} would violate the '≠' constraint at position (${row + 1}, ${col}) requiring it to be different from the ${leftPiece} to its left`;
+        return `placing ${currentPiece} would violate the '×' constraint between positions (${row + 1}, ${col}) and (${row + 1}, ${col + 1}) requiring it to be different from the ${leftPiece} to its left`;
       }
     }
     
@@ -1648,10 +1660,10 @@ export class TangoBoardSolver {
       const rightPiece = board[row][col + 1];
       
       if (rightConstraint === ConstraintType.SAME && rightPiece !== PieceType.EMPTY && currentPiece !== rightPiece) {
-        return `placing ${currentPiece} would violate the '=' constraint at position (${row + 1}, ${col + 1}) requiring it to match the ${rightPiece} to its right`;
+        return `placing ${currentPiece} would violate the '=' constraint between positions (${row + 1}, ${col + 1}) and (${row + 1}, ${col + 2}) requiring it to match the ${rightPiece} to its right`;
       }
       if (rightConstraint === ConstraintType.DIFFERENT && rightPiece !== PieceType.EMPTY && currentPiece === rightPiece) {
-        return `placing ${currentPiece} would violate the '≠' constraint at position (${row + 1}, ${col + 1}) requiring it to be different from the ${rightPiece} to its right`;
+        return `placing ${currentPiece} would violate the '×' constraint between positions (${row + 1}, ${col + 1}) and (${row + 1}, ${col + 2}) requiring it to be different from the ${rightPiece} to its right`;
       }
     }
     
@@ -1661,10 +1673,10 @@ export class TangoBoardSolver {
       const topPiece = board[row - 1][col];
       
       if (topConstraint === ConstraintType.SAME && topPiece !== PieceType.EMPTY && currentPiece !== topPiece) {
-        return `placing ${currentPiece} would violate the '=' constraint at position (${row}, ${col + 1}) requiring it to match the ${topPiece} above it`;
+        return `placing ${currentPiece} would violate the '=' constraint between positions (${row}, ${col + 1}) and (${row + 1}, ${col + 1}) requiring it to match the ${topPiece} above it`;
       }
       if (topConstraint === ConstraintType.DIFFERENT && topPiece !== PieceType.EMPTY && currentPiece === topPiece) {
-        return `placing ${currentPiece} would violate the '≠' constraint at position (${row}, ${col + 1}) requiring it to be different from the ${topPiece} above it`;
+        return `placing ${currentPiece} would violate the '×' constraint between positions (${row}, ${col + 1}) and (${row + 1}, ${col + 1}) requiring it to be different from the ${topPiece} above it`;
       }
     }
     
@@ -1673,10 +1685,10 @@ export class TangoBoardSolver {
       const bottomPiece = board[row + 1][col];
       
       if (bottomConstraint === ConstraintType.SAME && bottomPiece !== PieceType.EMPTY && currentPiece !== bottomPiece) {
-        return `placing ${currentPiece} would violate the '=' constraint at position (${row + 1}, ${col + 1}) requiring it to match the ${bottomPiece} below it`;
+        return `placing ${currentPiece} would violate the '=' constraint between positions (${row + 1}, ${col + 1}) and (${row + 2}, ${col + 1}) requiring it to match the ${bottomPiece} below it`;
       }
       if (bottomConstraint === ConstraintType.DIFFERENT && bottomPiece !== PieceType.EMPTY && currentPiece === bottomPiece) {
-        return `placing ${currentPiece} would violate the '≠' constraint at position (${row + 1}, ${col + 1}) requiring it to be different from the ${bottomPiece} below it`;
+        return `placing ${currentPiece} would violate the '×' constraint between positions (${row + 1}, ${col + 1}) and (${row + 2}, ${col + 1}) requiring it to be different from the ${bottomPiece} below it`;
       }
     }
     

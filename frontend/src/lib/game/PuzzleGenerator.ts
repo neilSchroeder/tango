@@ -354,6 +354,9 @@ export class PuzzleGenerator {
     // Logical constraint cleanup: Remove redundant constraints that aren't needed for logical solving
     this.removeRedundantConstraints(puzzleBoard, hConstraints, vConstraints, lockedTiles, solutionBoard);
 
+    // Ensure logical solvability: Add constraints if needed to make the puzzle logically solvable
+    this.ensureLogicalSolvability(puzzleBoard, hConstraints, vConstraints, lockedTiles, solutionBoard);
+
     // Copy the puzzle state back to the board parameter
     for (let row = 0; row < this.size; row++) {
       for (let col = 0; col < this.size; col++) {
@@ -365,8 +368,134 @@ export class PuzzleGenerator {
   }
 
   /**
-   * Adds strategic constraints based on the solution
+   * Ensures that the puzzle can be solved through logical deduction by adding constraints if needed
    */
+  private ensureLogicalSolvability(
+    board: PieceType[][],
+    hConstraints: ConstraintType[][],
+    vConstraints: ConstraintType[][],
+    lockedTiles: boolean[][],
+    solution: PieceType[][]
+  ): void {
+    // Test if the puzzle is already logically solvable
+    if (this.canSolveLogicallyToSolution(board, hConstraints, vConstraints, lockedTiles, solution)) {
+      return; // Already solvable
+    }
+
+    console.log('Puzzle not logically solvable, attempting to add constraints...');
+
+    // Try to identify positions where constraints would help logical progression
+    const constraintCandidates: Array<{
+      row: number;
+      col: number;
+      type: 'horizontal' | 'vertical';
+      constraint: ConstraintType;
+      priority: number;
+    }> = [];
+
+    // Look for positions where a constraint would create logical deductions
+    for (let row = 0; row < this.size; row++) {
+      for (let col = 0; col < this.size; col++) {
+        // Check horizontal constraint potential
+        if (col < this.size - 1 && hConstraints[row][col] === ConstraintType.NONE) {
+          const constraint = solution[row][col] === solution[row][col + 1] 
+            ? ConstraintType.SAME 
+            : ConstraintType.DIFFERENT;
+          
+          const priority = this.calculateConstraintPriority(board, row, col, 'horizontal', constraint, solution);
+          if (priority > 0) {
+            constraintCandidates.push({
+              row,
+              col,
+              type: 'horizontal',
+              constraint,
+              priority
+            });
+          }
+        }
+
+        // Check vertical constraint potential
+        if (row < this.size - 1 && vConstraints[row][col] === ConstraintType.NONE) {
+          const constraint = solution[row][col] === solution[row + 1][col]
+            ? ConstraintType.SAME
+            : ConstraintType.DIFFERENT;
+          
+          const priority = this.calculateConstraintPriority(board, row, col, 'vertical', constraint, solution);
+          if (priority > 0) {
+            constraintCandidates.push({
+              row,
+              col,
+              type: 'vertical',
+              constraint,
+              priority
+            });
+          }
+        }
+      }
+    }
+
+    // Sort candidates by priority (highest first)
+    constraintCandidates.sort((a, b) => b.priority - a.priority);
+
+    // Try adding constraints one by one until the puzzle becomes logically solvable
+    for (const candidate of constraintCandidates) {
+      // Add the constraint
+      if (candidate.type === 'horizontal') {
+        hConstraints[candidate.row][candidate.col] = candidate.constraint;
+      } else {
+        vConstraints[candidate.row][candidate.col] = candidate.constraint;
+      }
+
+      // Test if the puzzle is now logically solvable
+      if (this.canSolveLogicallyToSolution(board, hConstraints, vConstraints, lockedTiles, solution)) {
+        console.log(`Added ${candidate.type} constraint at (${candidate.row}, ${candidate.col}) to ensure logical solvability`);
+        return; // Success!
+      }
+    }
+
+    console.warn('Could not make puzzle logically solvable by adding constraints');
+  }
+
+  /**
+   * Calculate the priority of a constraint for helping logical progression
+   */
+  private calculateConstraintPriority(
+    board: PieceType[][],
+    row: number,
+    col: number,
+    type: 'horizontal' | 'vertical',
+    constraint: ConstraintType,
+    solution: PieceType[][]
+  ): number {
+    let priority = 0;
+
+    // Higher priority for constraints involving empty cells
+    if (type === 'horizontal') {
+      if (board[row][col] === PieceType.EMPTY) priority += 10;
+      if (board[row][col + 1] === PieceType.EMPTY) priority += 10;
+      
+      // Higher priority if one side is known and other is empty
+      if (board[row][col] !== PieceType.EMPTY && board[row][col + 1] === PieceType.EMPTY) priority += 20;
+      if (board[row][col] === PieceType.EMPTY && board[row][col + 1] !== PieceType.EMPTY) priority += 20;
+    } else {
+      if (board[row][col] === PieceType.EMPTY) priority += 10;
+      if (board[row + 1][col] === PieceType.EMPTY) priority += 10;
+      
+      // Higher priority if one side is known and other is empty
+      if (board[row][col] !== PieceType.EMPTY && board[row + 1][col] === PieceType.EMPTY) priority += 20;
+      if (board[row][col] === PieceType.EMPTY && board[row + 1][col] !== PieceType.EMPTY) priority += 20;
+    }
+
+    // Slightly lower priority for constraints between two empty cells
+    if (type === 'horizontal' && board[row][col] === PieceType.EMPTY && board[row][col + 1] === PieceType.EMPTY) {
+      priority = Math.max(1, priority - 5);
+    }
+    if (type === 'vertical' && board[row][col] === PieceType.EMPTY && board[row + 1][col] === PieceType.EMPTY) {
+      priority = Math.max(1, priority - 5);
+    }
+
+    return priority;
+  }
   private addStrategicConstraints(
     solution: PieceType[][],
     hConstraints: ConstraintType[][],
@@ -1356,6 +1485,7 @@ export class PuzzleGenerator {
 
   /**
    * Checks if the puzzle has exactly one solution that matches the expected solution
+   * AND can be solved through logical deduction alone
    */
   private hasUniqueSolution(
     board: PieceType[][],
@@ -1367,6 +1497,12 @@ export class PuzzleGenerator {
       // Create locked tiles for current board state (only non-empty pieces are locked)
       const lockedTiles = board.map(row => row.map(piece => piece !== PieceType.EMPTY));
       
+      // First, check if the puzzle can be solved through logical deduction alone
+      if (!this.canSolveLogicallyToSolution(board, hConstraints, vConstraints, lockedTiles, expectedSolution)) {
+        return false;
+      }
+      
+      // Then verify uniqueness using the full solver
       const solver = new TangoBoardSolver(board, hConstraints, vConstraints, lockedTiles);
       const solutions = solver.findAllSolutions(3); // Check for up to 3 solutions
       

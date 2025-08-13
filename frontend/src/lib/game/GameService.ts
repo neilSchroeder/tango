@@ -295,14 +295,42 @@ export class GameService {
   }
 
   /**
-   * Get a hint for the current board state using GameLogic-based analysis
+   * Get a hint for the current board state using TangoBoardSolver with detailed reasoning
    */
   getHint(gameState: GameState): Hint {
     if (!this.currentPuzzle) {
       throw new Error('No active puzzle to provide hints for');
     }
 
-    // First try using GameLogic for logical deduction hints
+    // Prioritize TangoBoardSolver for detailed hint reasoning
+    const solver = new TangoBoardSolver(
+      gameState.board,
+      gameState.hConstraints,
+      gameState.vConstraints,
+      gameState.lockedTiles
+    );
+
+    const hintResult = solver.getHint();
+    
+    // If TangoBoardSolver found a hint, use it (it has detailed reasoning)
+    if (hintResult.found && hintResult.row !== undefined && hintResult.col !== undefined) {
+      const hint: Hint = {
+        type: hintResult.hintType === 'logical_deduction' ? 'logical' : 
+              hintResult.hintType === 'strategic_guidance' ? 'constraint' :
+              hintResult.hintType === 'strategic_guess' ? 'rule' : 'none',
+        message: hintResult.reasoning,
+        reasoning: hintResult.reasoning,
+        position: { row: hintResult.row, col: hintResult.col }
+      };
+
+      if (hintResult.pieceType !== undefined) {
+        hint.suggestedPiece = hintResult.pieceType;
+      }
+
+      return hint;
+    }
+
+    // Fallback to GameLogic for basic hints if TangoBoardSolver doesn't find anything
     const gameLogic = new GameLogic();
     
     // Set up the GameLogic instance with current state
@@ -340,34 +368,14 @@ export class GameService {
       };
     }
 
-    // Fallback to solver-based hints
-    const solver = new TangoBoardSolver(
-      gameState.board,
-      gameState.hConstraints,
-      gameState.vConstraints,
-      gameState.lockedTiles
-    );
-
-    const hintResult = solver.getHint();
-    
-    // Convert HintResult to Hint interface
-    const hint: Hint = {
+    // If neither found a hint, return the TangoBoardSolver result (which includes "no hint" reasoning)
+    return {
       type: hintResult.hintType === 'logical_deduction' ? 'logical' : 
             hintResult.hintType === 'strategic_guidance' ? 'constraint' :
             hintResult.hintType === 'strategic_guess' ? 'rule' : 'none',
       message: hintResult.reasoning,
       reasoning: hintResult.reasoning
     };
-
-    if (hintResult.row !== undefined && hintResult.col !== undefined) {
-      hint.position = { row: hintResult.row, col: hintResult.col };
-    }
-
-    if (hintResult.pieceType !== undefined) {
-      hint.suggestedPiece = hintResult.pieceType;
-    }
-
-    return hint;
   }
 
   /**
@@ -505,26 +513,40 @@ export class GameService {
     }
 
     const validation = gameLogic.getValidationState();
+    const analysis = this.analyzeBoard(gameState);
     
     // Build sets for highlighting
     const constraintViolations = new Set<string>();
     const invalidStateTiles = new Set<string>();
 
-    // Add constraint violations (get red highlighting)
+    // Add constraint violations (= and × symbols violations)
     for (const violation of validation.constraintViolations) {
       constraintViolations.add(`${violation.row},${violation.col}`);
     }
 
-    // If overall state is invalid but no constraint violations, mark all non-empty tiles as light red
-    if (!validation.isValidState && validation.constraintViolations.length === 0) {
-      for (let row = 0; row < gameState.board.length; row++) {
-        for (let col = 0; col < gameState.board[row].length; col++) {
-          if (gameState.board[row][col] !== PieceType.EMPTY) {
-            invalidStateTiles.add(`${row},${col}`);
-          }
-        }
+    // Add rule violations (like consecutive pieces) - only highlight the specific violating tiles
+    for (const violation of analysis.ruleViolations) {
+      if (violation.type === 'consecutive_horizontal') {
+        // For horizontal consecutive, highlight all three tiles
+        console.log(`🔴 Highlighting horizontal consecutive at row ${violation.row}, cols ${violation.col}-${violation.col + 2}`);
+        invalidStateTiles.add(`${violation.row},${violation.col}`);
+        invalidStateTiles.add(`${violation.row},${violation.col + 1}`);
+        invalidStateTiles.add(`${violation.row},${violation.col + 2}`);
+      } else if (violation.type === 'consecutive_vertical') {
+        // For vertical consecutive, highlight all three tiles
+        console.log(`🔴 Highlighting vertical consecutive at col ${violation.col}, rows ${violation.row}-${violation.row + 2}`);
+        invalidStateTiles.add(`${violation.row},${violation.col}`);
+        invalidStateTiles.add(`${violation.row + 1},${violation.col}`);
+        invalidStateTiles.add(`${violation.row + 2},${violation.col}`);
       }
     }
+
+    console.log(`🎯 Final highlighting sets:`, {
+      constraintViolations: Array.from(constraintViolations),
+      invalidStateTiles: Array.from(invalidStateTiles),
+      ruleViolations: analysis.ruleViolations,
+      validationState: validation
+    });
 
     return {
       constraintViolations,

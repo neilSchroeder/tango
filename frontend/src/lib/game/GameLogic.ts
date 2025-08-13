@@ -311,14 +311,18 @@ export class GameLogic {
             this.board[row][col] = PieceType.EMPTY;
           }
 
-          // If only one piece type is valid, return it as a hint
+          // If only one piece type is valid, return it as a hint with detailed reasoning
           if (validPieces.length === 1) {
+            const validPiece = validPieces[0];
+            const invalidPiece = validPiece === PieceType.SUN ? PieceType.MOON : PieceType.SUN;
+            const detailedReasoning = this.getDetailedReasoningForPosition(row, col, validPiece, invalidPiece);
+            
             return {
               found: true,
               row,
               col,
-              pieceType: validPieces[0],
-              reasoning: `Only ${validPieces[0]} is valid at position (${row}, ${col})`,
+              pieceType: validPiece,
+              reasoning: detailedReasoning,
               confidence: 1.0,
               hintType: 'logical_deduction',
               educationalValue: 'high'
