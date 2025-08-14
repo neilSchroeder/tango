@@ -336,6 +336,53 @@ export class GameLogic {
   }
 
   /**
+   * Get detailed reasoning for why a piece should be placed at a position
+   */
+  private getDetailedReasoningForPosition(row: number, col: number, validPiece: PieceType, invalidPiece: PieceType): string {
+    // Check why the invalid piece would fail
+    this.board[row][col] = invalidPiece;
+    
+    let reasoning = `Position (${row + 1}, ${col + 1}) must be ${validPiece === PieceType.SUN ? 'a sun' : 'a moon'}. `;
+    
+    // Check if placing the invalid piece would cause too many in row/column
+    const [sunsRow, moonsRow] = this.countPiecesInRow(row);
+    const [sunsCol, moonsCol] = this.countPiecesInColumn(col);
+    
+    if (invalidPiece === PieceType.SUN) {
+      if (sunsRow > 3) {
+        reasoning += `Placing a sun would result in ${sunsRow} suns in row ${row + 1}, exceeding the limit of 3.`;
+      } else if (sunsCol > 3) {
+        reasoning += `Placing a sun would result in ${sunsCol} suns in column ${col + 1}, exceeding the limit of 3.`;
+      }
+    } else {
+      if (moonsRow > 3) {
+        reasoning += `Placing a moon would result in ${moonsRow} moons in row ${row + 1}, exceeding the limit of 3.`;
+      } else if (moonsCol > 3) {
+        reasoning += `Placing a moon would result in ${moonsCol} moons in column ${col + 1}, exceeding the limit of 3.`;
+      }
+    }
+    
+    // Check for consecutive pieces
+    if (this.hasThreeConsecutiveInRow(row)) {
+      reasoning += ` This would also create three consecutive identical pieces in row ${row + 1}.`;
+    }
+    if (this.hasThreeConsecutiveInColumn(col)) {
+      reasoning += ` This would also create three consecutive identical pieces in column ${col + 1}.`;
+    }
+    
+    // Check constraint violations
+    const violations = this.checkConstraintViolations();
+    if (violations.length > 0) {
+      reasoning += ` This would violate constraint requirements.`;
+    }
+    
+    // Reset the board state
+    this.board[row][col] = PieceType.EMPTY;
+    
+    return reasoning;
+  }
+
+  /**
    * Get the current board state
    */
   getBoard(): PieceType[][] {

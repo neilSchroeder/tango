@@ -123,45 +123,57 @@ export class GameService {
    * Make a move on the board
    */
   makeMove(gameState: GameState, row: number, col: number, piece: PieceType): GameState {
-    if (gameState.lockedTiles[row][col]) {
-      throw new Error('Cannot modify locked tiles');
+    try {
+      if (gameState.lockedTiles[row][col]) {
+        throw new Error('Cannot modify locked tiles');
+      }
+
+      if (piece !== PieceType.EMPTY && piece !== PieceType.SUN && piece !== PieceType.MOON) {
+        throw new Error('Invalid piece type');
+      }
+
+      // Create new board with the move
+      const newBoard = gameState.board.map(boardRow => [...boardRow]);
+      newBoard[row][col] = piece;
+
+      // Create temporary game state for validation
+      const tempGameState = {
+        ...gameState,
+        board: newBoard
+      };
+
+      // Get highlighting information mirroring Python backend
+      const highlighting = this.getHighlightingInfo(tempGameState);
+      
+      // Also get basic validation for completion check
+      const basicValidation = this.validateGameWithErrors(tempGameState);
+
+      // Check if complete
+      const isComplete = basicValidation.isComplete && basicValidation.isValid;
+
+      const newGameState: GameState = {
+        ...gameState,
+        board: newBoard,
+        isValid: basicValidation.isValid,
+        isComplete,
+        moveCount: gameState.moveCount + 1,
+        validationErrors: basicValidation.errors,
+        constraintViolations: highlighting.constraintViolations,
+        invalidStateTiles: highlighting.invalidStateTiles
+      };
+
+      return newGameState;
+    } catch (error) {
+      console.error('❌ Error in makeMove:', error);
+      // Return the original state with error information instead of throwing
+      return {
+        ...gameState,
+        isValid: false,
+        validationErrors: [error instanceof Error ? error.message : 'Unknown error occurred'],
+        constraintViolations: new Set(),
+        invalidStateTiles: new Set()
+      };
     }
-
-    if (piece !== PieceType.EMPTY && piece !== PieceType.SUN && piece !== PieceType.MOON) {
-      throw new Error('Invalid piece type');
-    }
-
-    // Create new board with the move
-    const newBoard = gameState.board.map(boardRow => [...boardRow]);
-    newBoard[row][col] = piece;
-
-    // Create temporary game state for validation
-    const tempGameState = {
-      ...gameState,
-      board: newBoard
-    };
-
-    // Get highlighting information mirroring Python backend
-    const highlighting = this.getHighlightingInfo(tempGameState);
-    
-    // Also get basic validation for completion check
-    const basicValidation = this.validateGameWithErrors(tempGameState);
-
-    // Check if complete
-    const isComplete = basicValidation.isComplete && basicValidation.isValid;
-
-    const newGameState: GameState = {
-      ...gameState,
-      board: newBoard,
-      isValid: basicValidation.isValid,
-      isComplete,
-      moveCount: gameState.moveCount + 1,
-      validationErrors: basicValidation.errors,
-      constraintViolations: highlighting.constraintViolations,
-      invalidStateTiles: highlighting.invalidStateTiles
-    };
-
-    return newGameState;
   }
 
   /**
@@ -484,74 +496,92 @@ export class GameService {
     constraintViolations: Set<string>; 
     invalidStateTiles: Set<string>;
   } {
-    // Create a GameLogic instance for this validation
-    const gameLogic = new GameLogic();
-    
-    // Set up the GameLogic instance with current state
-    for (let row = 0; row < gameState.board.length; row++) {
-      for (let col = 0; col < gameState.board[row].length; col++) {
-        if (gameState.board[row][col] !== PieceType.EMPTY) {
-          gameLogic.placePiece(row, col, gameState.board[row][col]);
+    try {
+      // Add safety check to prevent processing invalid states
+      if (!gameState || !gameState.board || !gameState.hConstraints || !gameState.vConstraints) {
+        console.warn('⚠️ Invalid game state passed to getHighlightingInfo');
+        return {
+          constraintViolations: new Set(),
+          invalidStateTiles: new Set()
+        };
+      }
+
+      // Create a GameLogic instance for this validation
+      const gameLogic = new GameLogic();
+      
+      // Set up the GameLogic instance with current state
+      for (let row = 0; row < gameState.board.length; row++) {
+        for (let col = 0; col < gameState.board[row].length; col++) {
+          if (gameState.board[row][col] !== PieceType.EMPTY) {
+            gameLogic.placePiece(row, col, gameState.board[row][col]);
+          }
+          if (gameState.lockedTiles[row][col]) {
+            gameLogic.lockTile(row, col);
+          }
         }
-        if (gameState.lockedTiles[row][col]) {
-          gameLogic.lockTile(row, col);
+      }
+
+      // Set constraints with bounds checking
+      for (let row = 0; row < gameState.hConstraints.length; row++) {
+        for (let col = 0; col < gameState.hConstraints[row].length; col++) {
+          gameLogic.setHorizontalConstraint(row, col, gameState.hConstraints[row][col]);
         }
       }
-    }
 
-    // Set constraints
-    for (let row = 0; row < gameState.hConstraints.length; row++) {
-      for (let col = 0; col < gameState.hConstraints[row].length; col++) {
-        gameLogic.setHorizontalConstraint(row, col, gameState.hConstraints[row][col]);
+      for (let row = 0; row < gameState.vConstraints.length; row++) {
+        for (let col = 0; col < gameState.vConstraints[row].length; col++) {
+          gameLogic.setVerticalConstraint(row, col, gameState.vConstraints[row][col]);
+        }
       }
-    }
 
-    for (let row = 0; row < gameState.vConstraints.length; row++) {
-      for (let col = 0; col < gameState.vConstraints[row].length; col++) {
-        gameLogic.setVerticalConstraint(row, col, gameState.vConstraints[row][col]);
+      const validation = gameLogic.getValidationState();
+      const analysis = this.analyzeBoard(gameState);
+      
+      // Build sets for highlighting
+      const constraintViolations = new Set<string>();
+      const invalidStateTiles = new Set<string>();
+
+      // Add constraint violations (= and × symbols violations)
+      for (const violation of validation.constraintViolations) {
+        constraintViolations.add(`${violation.row},${violation.col}`);
       }
-    }
 
-    const validation = gameLogic.getValidationState();
-    const analysis = this.analyzeBoard(gameState);
-    
-    // Build sets for highlighting
-    const constraintViolations = new Set<string>();
-    const invalidStateTiles = new Set<string>();
-
-    // Add constraint violations (= and × symbols violations)
-    for (const violation of validation.constraintViolations) {
-      constraintViolations.add(`${violation.row},${violation.col}`);
-    }
-
-    // Add rule violations (like consecutive pieces) - only highlight the specific violating tiles
-    for (const violation of analysis.ruleViolations) {
-      if (violation.type === 'consecutive_horizontal') {
-        // For horizontal consecutive, highlight all three tiles
-        console.log(`🔴 Highlighting horizontal consecutive at row ${violation.row}, cols ${violation.col}-${violation.col + 2}`);
-        invalidStateTiles.add(`${violation.row},${violation.col}`);
-        invalidStateTiles.add(`${violation.row},${violation.col + 1}`);
-        invalidStateTiles.add(`${violation.row},${violation.col + 2}`);
-      } else if (violation.type === 'consecutive_vertical') {
-        // For vertical consecutive, highlight all three tiles
-        console.log(`🔴 Highlighting vertical consecutive at col ${violation.col}, rows ${violation.row}-${violation.row + 2}`);
-        invalidStateTiles.add(`${violation.row},${violation.col}`);
-        invalidStateTiles.add(`${violation.row + 1},${violation.col}`);
-        invalidStateTiles.add(`${violation.row + 2},${violation.col}`);
+      // Add rule violations (like consecutive pieces) - only highlight the specific violating tiles
+      for (const violation of analysis.ruleViolations) {
+        if (violation.type === 'consecutive_horizontal') {
+          // For horizontal consecutive, highlight all three tiles
+          console.log(`🔴 Highlighting horizontal consecutive at row ${violation.row}, cols ${violation.col}-${violation.col + 2}`);
+          invalidStateTiles.add(`${violation.row},${violation.col}`);
+          invalidStateTiles.add(`${violation.row},${violation.col + 1}`);
+          invalidStateTiles.add(`${violation.row},${violation.col + 2}`);
+        } else if (violation.type === 'consecutive_vertical') {
+          // For vertical consecutive, highlight all three tiles
+          console.log(`🔴 Highlighting vertical consecutive at col ${violation.col}, rows ${violation.row}-${violation.row + 2}`);
+          invalidStateTiles.add(`${violation.row},${violation.col}`);
+          invalidStateTiles.add(`${violation.row + 1},${violation.col}`);
+          invalidStateTiles.add(`${violation.row + 2},${violation.col}`);
+        }
       }
+
+      console.log(`🎯 Final highlighting sets:`, {
+        constraintViolations: Array.from(constraintViolations),
+        invalidStateTiles: Array.from(invalidStateTiles),
+        ruleViolations: analysis.ruleViolations.length,
+        validationViolations: validation.constraintViolations.length
+      });
+
+      return {
+        constraintViolations,
+        invalidStateTiles
+      };
+    } catch (error) {
+      console.error('❌ Error in getHighlightingInfo:', error);
+      // Return empty sets to prevent further errors
+      return {
+        constraintViolations: new Set(),
+        invalidStateTiles: new Set()
+      };
     }
-
-    console.log(`🎯 Final highlighting sets:`, {
-      constraintViolations: Array.from(constraintViolations),
-      invalidStateTiles: Array.from(invalidStateTiles),
-      ruleViolations: analysis.ruleViolations,
-      validationState: validation
-    });
-
-    return {
-      constraintViolations,
-      invalidStateTiles
-    };
   }
 
   /**

@@ -189,6 +189,8 @@ function createGameStore() {
       clearHint(); // Clear any active hint when making a move
       state.isMakingMove = true;
       
+      console.log(`🎮 Making move at (${row}, ${col}) with piece: ${pieceType}`);
+      
       // Convert API format back to local format
       const localGameState = {
         gameId: state.currentGame.game_id,
@@ -207,9 +209,9 @@ function createGameStore() {
       // Make the move using local service
       const newLocalGameState = gameService.makeMove(localGameState, row, col, convertPieceTypeToLocal(pieceType));
       
-      // Set validation errors for highlighting
-      state.validationErrors = newLocalGameState.validationErrors || [];
-      state.delayedValidationErrors = newLocalGameState.validationErrors || [];
+      // Set validation errors for highlighting - with safety check
+      state.validationErrors = Array.isArray(newLocalGameState.validationErrors) ? newLocalGameState.validationErrors : [];
+      state.delayedValidationErrors = state.validationErrors;
       
       // Convert back to API format
       state.currentGame = {
@@ -222,8 +224,8 @@ function createGameStore() {
         start_time: newLocalGameState.startTime.toISOString(),
         completion_time: newLocalGameState.completionTime?.toISOString(),
         moves_count: newLocalGameState.moveCount,
-        constraintViolations: newLocalGameState.constraintViolations,
-        invalidStateTiles: newLocalGameState.invalidStateTiles
+        constraintViolations: newLocalGameState.constraintViolations || new Set(),
+        invalidStateTiles: newLocalGameState.invalidStateTiles || new Set()
       };
 
       // If game is complete, stop timer and save to leaderboard
@@ -250,10 +252,16 @@ function createGameStore() {
         await loadLeaderboard();
       }
 
+      console.log(`✅ Move completed successfully. Game state:`, {
+        isValid: newLocalGameState.isValid,
+        isComplete: newLocalGameState.isComplete,
+        errorCount: state.validationErrors.length
+      });
+
       return true;
     } catch (error) {
+      console.error('❌ Error in makeMove:', error);
       state.error = error instanceof Error ? error.message : 'Move failed';
-      return false;
       return false;
     } finally {
       state.isMakingMove = false;

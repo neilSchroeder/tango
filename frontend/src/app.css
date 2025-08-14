@@ -26,15 +26,15 @@
   --tile-border-radius: 0.375rem;
   --piece-size: 3.5rem;  /* Adjusted to medium size - change this value to resize pieces */
   
-  /* Mobile responsiveness - smaller sizes for mobile devices */
-  --mobile-tile-size: 3.5rem;
-  --mobile-tile-font-size: 1.8rem;
-  --mobile-piece-size: 2.5rem;
+  /* Mobile responsiveness - bigger sizes for better mobile experience */
+  --mobile-tile-size: 4rem;
+  --mobile-tile-font-size: 2rem;
+  --mobile-piece-size: 3rem;
   
   /* Tablet responsiveness - medium sizes for tablets */
-  --tablet-tile-size: 4.25rem;
-  --tablet-tile-font-size: 2.1rem;
-  --tablet-piece-size: 3rem;
+  --tablet-tile-size: 4.5rem;
+  --tablet-tile-font-size: 2.25rem;
+  --tablet-piece-size: 3.25rem;
   
   /* Color variables for easy customization */
   --sun-color: #f59e0b;      /* Amber/yellow for sun */
@@ -97,7 +97,7 @@
   border: 2px solid var(--border-primary);
   background-color: var(--bg-primary);
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
+  transition: all 0.15s ease-in-out;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -239,7 +239,7 @@
   border: 1px solid var(--border-primary);
   border-radius: 0.25rem;
   z-index: 10;
-  transition: transform 0.2s ease-in-out;
+  transition: transform 0.15s ease-in-out;
   cursor: default;
 }
 
@@ -383,11 +383,11 @@
   }
 }
 
-/* Landscape orientation on mobile */
+/* Landscape orientation on mobile - keep tiles reasonably sized */
 @media (max-width: 640px) and (orientation: landscape) {
   :root {
-    --mobile-tile-size: 3rem;
-    --mobile-tile-font-size: 1.5rem;
-    --mobile-piece-size: 2rem;
+    --mobile-tile-size: 3.5rem;
+    --mobile-tile-font-size: 1.75rem;
+    --mobile-piece-size: 2.5rem;
   }
 }

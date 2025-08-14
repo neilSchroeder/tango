@@ -19,7 +19,7 @@
 </script>
 
 <div class="leaderboard bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 sm:p-4 transition-colors duration-300">
-  <h2 class="text-base sm:text-lg font-bold mb-3 text-center text-gray-800 dark:text-gray-200 transition-colors duration-300">
+  <h2 class="text-lg sm:text-xl md:text-2xl font-bold mb-4 text-center text-gray-800 dark:text-gray-200 transition-colors duration-300">
     🏆 Leaderboard
   </h2>
 
@@ -58,7 +58,7 @@
 
     <div class="text-center">
       <button
-        class="mt-3 px-4 sm:px-6 py-2 sm:py-3 bg-blue-500 text-white text-xs sm:text-sm rounded-full hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 shadow-md hover:shadow-lg"
+        class="mt-4 px-6 sm:px-8 py-3 sm:py-4 bg-blue-500 text-white text-sm sm:text-base rounded-full hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 shadow-md hover:shadow-lg min-w-[120px] min-h-[48px] font-medium"
         onclick={() => gameStore.loadLeaderboard()}
         disabled={state.isLoadingLeaderboard}
       >

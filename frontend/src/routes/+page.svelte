@@ -31,10 +31,10 @@
         <ThemeToggle />
       </div>
       
-      <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2 transition-colors duration-300">
+      <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-800 dark:text-gray-100 mb-2 transition-colors duration-300">
         🌞 Tango Puzzle 🌙
       </h1>
-      <p class="text-gray-600 dark:text-gray-400 text-xs sm:text-sm transition-colors duration-300">
+      <p class="text-gray-600 dark:text-gray-400 text-sm sm:text-base md:text-lg transition-colors duration-300">
         Place suns and moons following the rules to complete the puzzle
       </p>
     </header>

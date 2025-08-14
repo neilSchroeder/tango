@@ -27,10 +27,26 @@
     isHinted = false
   }: Props = $props();
 
+  // Add debouncing to prevent rapid clicks
+  let isProcessingClick = false;
+
   async function handleClick() {
-    if (isLocked || gameStore.state.isMakingMove) return;
-    const nextPiece = getNextPiece(piece);
-    await gameStore.makeMove(row, col, nextPiece);
+    if (isLocked || gameStore.state.isMakingMove || isProcessingClick) return;
+    
+    try {
+      isProcessingClick = true;
+      const nextPiece = getNextPiece(piece);
+      console.log(`🎯 Making move at (${row}, ${col}) with piece: ${nextPiece}`);
+      await gameStore.makeMove(row, col, nextPiece);
+    } catch (error) {
+      console.error('❌ Error in handleClick:', error);
+      // Prevent infinite loops by not re-throwing
+    } finally {
+      // Reset the processing flag after a small delay
+      setTimeout(() => {
+        isProcessingClick = false;
+      }, 100);
+    }
   }
 
   // Compute CSS classes

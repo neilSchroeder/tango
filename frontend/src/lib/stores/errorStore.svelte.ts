@@ -9,6 +9,8 @@ interface ErrorState {
   invalidStateTiles: Set<string>;
   delayedConstraintViolations: Set<string>;
   delayedInvalidStateTiles: Set<string>;
+  validationErrors: string[];
+  delayedValidationErrors: string[];
 }
 
 function createErrorStore() {
@@ -17,54 +19,81 @@ function createErrorStore() {
     constraintViolations: new Set(),
     invalidStateTiles: new Set(),
     delayedConstraintViolations: new Set(),
-    delayedInvalidStateTiles: new Set()
+    delayedInvalidStateTiles: new Set(),
+    validationErrors: [],
+    delayedValidationErrors: []
   });
 
   let delayTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  function updateErrors(gameState: GameState | null) {
-    // Clear any pending timeout
-    if (delayTimeout) {
-      clearTimeout(delayTimeout);
-      delayTimeout = null;
-    }
+  function updateErrors(gameState: GameState | null, validationErrors: string[] = []) {
+    try {
+      // Clear any pending timeout first
+      if (delayTimeout) {
+        clearTimeout(delayTimeout);
+        delayTimeout = null;
+      }
 
-    // Get current violations from game state
-    const currentConstraintViolations = gameState?.constraintViolations || new Set();
-    const currentInvalidStateTiles = gameState?.invalidStateTiles || new Set();
+      // Prevent excessive updates if state hasn't changed
+      if (!gameState) {
+        // Clear all highlights when no game state
+        state.constraintViolations = new Set();
+        state.invalidStateTiles = new Set();
+        state.delayedConstraintViolations = new Set();
+        state.delayedInvalidStateTiles = new Set();
+        state.validationErrors = [];
+        state.delayedValidationErrors = [];
+        return;
+      }
 
-    // Update immediate state (for debugging and validation display)
-    state.constraintViolations = new Set(currentConstraintViolations);
-    state.invalidStateTiles = new Set(currentInvalidStateTiles);
+      // Get current violations from game state
+      const currentConstraintViolations = gameState?.constraintViolations || new Set();
+      const currentInvalidStateTiles = gameState?.invalidStateTiles || new Set();
+      const currentValidationErrors = validationErrors;
 
-    console.log('🎯 Error store updated:', {
-      constraintViolations: Array.from(currentConstraintViolations),
-      invalidStateTiles: Array.from(currentInvalidStateTiles)
-    });
+      // Update immediate state (for debugging and validation display)
+      state.constraintViolations = new Set(currentConstraintViolations);
+      state.invalidStateTiles = new Set(currentInvalidStateTiles);
+      state.validationErrors = [...currentValidationErrors];
 
-    // If no violations, clear all delayed highlights immediately
-    if (currentConstraintViolations.size === 0 && currentInvalidStateTiles.size === 0) {
-      console.log('🧹 No violations - clearing all delayed highlights immediately');
+      // If no violations, clear all delayed highlights immediately
+      if (currentConstraintViolations.size === 0 && currentInvalidStateTiles.size === 0 && currentValidationErrors.length === 0) {
+        state.delayedConstraintViolations = new Set();
+        state.delayedInvalidStateTiles = new Set();
+        state.delayedValidationErrors = [];
+        console.log(`✅ No violations - cleared all highlights`);
+        return;
+      }
+
+      // Clear previous delayed highlights before setting new ones
       state.delayedConstraintViolations = new Set();
       state.delayedInvalidStateTiles = new Set();
-      return;
+      state.delayedValidationErrors = [];
+
+      console.log(`⏰ Setting delayed highlighting for ${currentConstraintViolations.size} constraint violations, ${currentInvalidStateTiles.size} invalid tiles, and ${currentValidationErrors.length} validation errors`);
+
+      // If there are violations, set delayed highlighting
+      delayTimeout = setTimeout(() => {
+        try {
+          // Double-check the violations still exist (in case state changed during timeout)
+          if (gameState && gameState.constraintViolations && gameState.invalidStateTiles) {
+            state.delayedConstraintViolations = new Set(gameState.constraintViolations);
+            state.delayedInvalidStateTiles = new Set(gameState.invalidStateTiles);
+            state.delayedValidationErrors = [...currentValidationErrors];
+            console.log(`🎯 Applied delayed highlighting: ${state.delayedConstraintViolations.size} constraint + ${state.delayedInvalidStateTiles.size} invalid + ${state.delayedValidationErrors.length} validation errors`);
+          }
+        } catch (timeoutError) {
+          console.error('❌ Error in delayed highlighting timeout:', timeoutError);
+        }
+      }, 1000); // 1 second delay for better responsiveness
+    } catch (error) {
+      console.error('❌ Error in updateErrors:', error);
+      // Clear timeout on error to prevent issues
+      if (delayTimeout) {
+        clearTimeout(delayTimeout);
+        delayTimeout = null;
+      }
     }
-
-    // Clear previous delayed highlights before setting new ones
-    state.delayedConstraintViolations = new Set();
-    state.delayedInvalidStateTiles = new Set();
-
-    // If there are violations, set delayed highlighting
-    delayTimeout = setTimeout(() => {
-      console.log('✨ Applying delayed error highlighting');
-      state.delayedConstraintViolations = new Set(currentConstraintViolations);
-      state.delayedInvalidStateTiles = new Set(currentInvalidStateTiles);
-      
-      console.log('📊 Delayed highlighting applied:', {
-        delayedConstraintViolations: Array.from(state.delayedConstraintViolations),
-        delayedInvalidStateTiles: Array.from(state.delayedInvalidStateTiles)
-      });
-    }, 1500); // 1.5 second delay
   }
 
   function hasError(row: number, col: number): boolean {
@@ -72,16 +101,7 @@ function createErrorStore() {
     const hasConstraintViolation = state.delayedConstraintViolations.has(tileId);
     const hasInvalidState = state.delayedInvalidStateTiles.has(tileId);
     
-    const hasAnyError = hasConstraintViolation || hasInvalidState;
-    
-    // Debug logging for a specific tile that should be highlighted
-    if (row === 3 && col === 0) {
-      console.log(`🐛 Checking error state for tile (${row},${col}): constraint=${hasConstraintViolation}, invalid=${hasInvalidState}, total=${hasAnyError}`);
-      console.log(`🐛 Current delayed violations:`, Array.from(state.delayedConstraintViolations));
-      console.log(`🐛 Current delayed invalid tiles:`, Array.from(state.delayedInvalidStateTiles));
-    }
-    
-    return hasAnyError;
+    return hasConstraintViolation || hasInvalidState;
   }
 
   function hasConstraintViolation(row: number, col: number): boolean {
@@ -102,6 +122,10 @@ function createErrorStore() {
     return Array.from(state.invalidStateTiles);
   }
 
+  function getDelayedValidationErrors(): string[] {
+    return [...state.delayedValidationErrors];
+  }
+
   return {
     // State access
     get state() { return state; },
@@ -112,7 +136,8 @@ function createErrorStore() {
     hasConstraintViolation,
     hasInvalidState,
     getImmediateViolations,
-    getImmediateInvalidTiles
+    getImmediateInvalidTiles,
+    getDelayedValidationErrors
   };
 }
 

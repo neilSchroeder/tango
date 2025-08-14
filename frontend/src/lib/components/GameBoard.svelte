@@ -4,14 +4,32 @@
   import GameTile from './GameTile.svelte';
   import GameStatus from './GameStatus.svelte';
   import HintDisplay from './HintDisplay.svelte';
+  import DelayedValidationErrors from './DelayedValidationErrors.svelte';
   import type { ConstraintType } from '../api/types';
 
   const { state: gameState } = gameStore;
 
-  // Update error highlights when game state changes
+  // Track previous game state to prevent unnecessary updates
+  let previousGameId: string | null = null;
+  let previousMoveCount: number = -1;
+
+  // Update error highlights when game state changes - with better change detection
   $effect(() => {
-    console.log('🔄 GameBoard effect triggered - updating error store');
-    errorStore.updateErrors(gameState.currentGame);
+    // Only update if we have a real change
+    if (gameState.currentGame && 
+        (gameState.currentGame.game_id !== previousGameId || 
+         gameState.currentGame.moves_count !== previousMoveCount)) {
+      
+      console.log(`🎯 Updating error highlights for move ${gameState.currentGame.moves_count}`);
+      
+      try {
+        errorStore.updateErrors(gameState.currentGame, gameState.validationErrors);
+        previousGameId = gameState.currentGame.game_id;
+        previousMoveCount = gameState.currentGame.moves_count;
+      } catch (error) {
+        console.error('❌ Error updating error highlights:', error);
+      }
+    }
   });
 
   function getConstraint(constraints: ConstraintType[][], row: number, col: number, maxIndex: number): ConstraintType {
@@ -51,8 +69,9 @@
     <GameStatus 
       gameState={gameState.currentGame}
       formattedTime={gameStore.formattedTime}
-      validationErrors={gameState.validationErrors}
     />
+
+    <DelayedValidationErrors />
 
     <HintDisplay hint={gameState.currentHint} />
   {:else}
@@ -90,12 +109,12 @@
   /* Ensure the game board is centered and properly sized on mobile */
   @media (max-width: 640px) {
     .game-board-container {
-      max-width: calc(100vw - 1rem);
-      padding: 0 0.5rem;
+      max-width: calc(100vw - 0.5rem);
+      padding: 0 0.25rem;
     }
     
     .game-board {
-      max-width: calc(100vw - 2rem);
+      max-width: calc(100vw - 1rem);
     }
   }
 </style>
