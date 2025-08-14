@@ -1747,6 +1747,4 @@ export class TangoBoardSolver {
     return positions;
   }
 
-  // Strategic move method removed - hints should only be based on logical deductions from game rules
-  // not strategic balance suggestions or guesses
 }
