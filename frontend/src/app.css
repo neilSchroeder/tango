@@ -215,6 +215,20 @@
   animation: hint-pulse 2s infinite;
 }
 
+/* Completed game state styling */
+.game-tile--completed {
+  opacity: 0.7;
+  cursor: not-allowed !important;
+  filter: saturate(0.6);
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+.game-tile--completed:hover {
+  opacity: 0.7 !important;
+  transform: none !important;
+  background-color: inherit !important;
+}
+
 @keyframes error-pulse {
   0% { transform: scale(1); }
   50% { transform: scale(1.05); }

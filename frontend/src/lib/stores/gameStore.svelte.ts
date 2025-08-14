@@ -4,6 +4,7 @@
 
 import { GameService } from '../game/GameService';
 import { PieceType as LocalPieceType, ConstraintType as LocalConstraintType } from '../game/types';
+import { errorStore } from './errorStore.svelte';
 import type { 
   GameState, 
   MoveRequest, 
@@ -79,6 +80,13 @@ interface GameStore {
   
   // Game timer
   elapsedTime: number;
+  
+  // Move history for undo functionality
+  moveHistory: GameState[];
+  initialGameState: GameState | null;
+  
+  // Game difficulty
+  difficulty: string;
 }
 
 function createGameStore() {
@@ -96,7 +104,10 @@ function createGameStore() {
     currentHint: null,
     hintHighlight: null,
     leaderboard: [],
-    elapsedTime: 0
+    elapsedTime: 0,
+    moveHistory: [],
+    initialGameState: null,
+    difficulty: 'medium'
   });
 
   // Timer interval reference
@@ -146,13 +157,18 @@ function createGameStore() {
   }
 
   // Public API
-  async function createGame(): Promise<void> {
+  async function createGame(difficulty?: string): Promise<void> {
     try {
       clearError();
       state.isCreatingGame = true;
       
-      // Use local game service instead of API
-      const localGameState = gameService.newGame('standard');
+      // Update difficulty if provided
+      if (difficulty) {
+        state.difficulty = difficulty;
+      }
+      
+      // Use local game service with selected difficulty
+      const localGameState = gameService.newGame(state.difficulty);
       
       // Convert local game state to API format
       state.currentGame = {
@@ -168,6 +184,10 @@ function createGameStore() {
         constraintViolations: new Set(),
         invalidStateTiles: new Set()
       };
+      
+      // Store initial state for reset functionality
+      state.initialGameState = JSON.parse(JSON.stringify(state.currentGame));
+      state.moveHistory = [];
       
       state.elapsedTime = 0;
       startTimer();
@@ -190,6 +210,11 @@ function createGameStore() {
       state.isMakingMove = true;
       
       console.log(`🎮 Making move at (${row}, ${col}) with piece: ${pieceType}`);
+      
+      // Store current state in move history before making the move
+      if (state.currentGame) {
+        state.moveHistory.push(JSON.parse(JSON.stringify(state.currentGame)));
+      }
       
       // Convert API format back to local format
       const localGameState = {
@@ -357,15 +382,112 @@ function createGameStore() {
   }
 
   function resetGame(): void {
-    stopTimer();
-    state.currentGame = null;
+    if (!state.initialGameState) {
+      state.error = 'No game to reset';
+      return;
+    }
+    
+    // Restore to initial state
+    state.currentGame = JSON.parse(JSON.stringify(state.initialGameState));
+    state.moveHistory = [];
     state.elapsedTime = 0;
+    state.validationErrors = [];
+    state.delayedValidationErrors = [];
     clearError();
+    clearHint();
+    
+    // Re-validate the reset state and update error highlighting
+    if (state.currentGame) {
+      const localGameState = {
+        gameId: state.currentGame.game_id,
+        board: state.currentGame.board.map(row => row.map(convertPieceTypeToLocal)),
+        hConstraints: state.currentGame.h_constraints.map(row => row.map(convertConstraintTypeToLocal)),
+        vConstraints: state.currentGame.v_constraints.map(row => row.map(convertConstraintTypeToLocal)),
+        lockedTiles: state.currentGame.locked_tiles,
+        isComplete: state.currentGame.is_complete,
+        isValid: true,
+        difficulty: 'standard',
+        startTime: new Date(state.currentGame.start_time),
+        completionTime: state.currentGame.completion_time ? new Date(state.currentGame.completion_time) : undefined,
+        moveCount: state.currentGame.moves_count
+      };
+      
+      // Get the current violations for the reset state
+      const highlighting = gameService.getHighlightingInfo(localGameState);
+      const validation = gameService.validateGameWithErrors(localGameState);
+      
+      // Update the current game state with fresh violation data
+      state.currentGame.constraintViolations = highlighting.constraintViolations || new Set();
+      state.currentGame.invalidStateTiles = highlighting.invalidStateTiles || new Set();
+      state.validationErrors = validation.errors;
+      state.delayedValidationErrors = validation.errors;
+      
+      // Update error store with fresh data
+      errorStore.updateErrors(state.currentGame, validation.errors);
+    }
+    
+    // Restart the timer
+    startTimer();
+  }
+
+  function undoMove(): void {
+    if (state.moveHistory.length === 0) {
+      state.error = 'No moves to undo';
+      return;
+    }
+    
+    if (!state.currentGame) {
+      state.error = 'No active game';
+      return;
+    }
+    
+    // Restore the previous state
+    const previousState = state.moveHistory.pop();
+    if (previousState) {
+      state.currentGame = JSON.parse(JSON.stringify(previousState));
+      clearError();
+      clearHint();
+      
+      // Re-validate the restored state to get proper error highlighting
+      if (state.currentGame) {
+        const localGameState = {
+          gameId: state.currentGame.game_id,
+          board: state.currentGame.board.map(row => row.map(convertPieceTypeToLocal)),
+          hConstraints: state.currentGame.h_constraints.map(row => row.map(convertConstraintTypeToLocal)),
+          vConstraints: state.currentGame.v_constraints.map(row => row.map(convertConstraintTypeToLocal)),
+          lockedTiles: state.currentGame.locked_tiles,
+          isComplete: state.currentGame.is_complete,
+          isValid: true,
+          difficulty: 'standard',
+          startTime: new Date(state.currentGame.start_time),
+          completionTime: state.currentGame.completion_time ? new Date(state.currentGame.completion_time) : undefined,
+          moveCount: state.currentGame.moves_count
+        };
+        
+        // Get the current violations for the restored state
+        const highlighting = gameService.getHighlightingInfo(localGameState);
+        const validation = gameService.validateGameWithErrors(localGameState);
+        
+        // Update the current game state with fresh violation data
+        state.currentGame.constraintViolations = highlighting.constraintViolations || new Set();
+        state.currentGame.invalidStateTiles = highlighting.invalidStateTiles || new Set();
+        state.validationErrors = validation.errors;
+        state.delayedValidationErrors = validation.errors;
+        
+        // Update error store with fresh data
+        errorStore.updateErrors(state.currentGame, validation.errors);
+      }
+    }
   }
 
   // Cleanup function
   function destroy(): void {
     stopTimer();
+  }
+  
+  // Set difficulty
+  function setDifficulty(newDifficulty: string): void {
+    state.difficulty = newDifficulty;
   }
 
   return {
@@ -384,7 +506,9 @@ function createGameStore() {
     getHint,
     clearHint,
     resetGame,
+    undoMove,
     clearError,
+    setDifficulty,
     destroy
   };
 }

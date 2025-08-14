@@ -34,9 +34,9 @@
       <p class="text-xs mt-1">Be the first to finish a puzzle!</p>
     </div>
   {:else}
-    <div class="space-y-2 max-h-40 sm:max-h-48 overflow-y-auto">
+    <div class="space-y-1 max-h-40 sm:max-h-48 overflow-y-auto">
       {#each state.leaderboard as entry, index}
-        <div class="leaderboard-entry {index === 0 ? 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700' : 'border-gray-200 dark:border-gray-600'} transition-colors duration-300 p-2 rounded border">
+        <div class="leaderboard-entry {index === 0 ? 'bg-yellow-50 dark:bg-yellow-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'} transition-colors duration-300 p-3 rounded-lg">
           <div class="text-center">
             <div class="inline-flex items-center justify-center">
               <span class="text-sm sm:text-lg mr-2">

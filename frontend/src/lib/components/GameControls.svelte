@@ -11,15 +11,56 @@
     gameStore.resetGame();
   }
 
+  function handleUndo() {
+    gameStore.undoMove();
+  }
+
   async function handleHint() {
     await gameStore.getHint();
   }
+  
+  function handleDifficultyChange(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    gameStore.setDifficulty(target.value);
+  }
+  
+  const difficultyOptions = [
+    { value: 'easy', label: '🟢 Easy', description: '8-12 pieces, fewer constraints' },
+    { value: 'medium', label: '🟡 Medium', description: '6-10 pieces, moderate constraints' },
+    { value: 'hard', label: '🔴 Hard', description: '4-8 pieces, more constraints' }
+  ];
+  
+  // Get current difficulty description for tooltip
+  $: currentDifficultyDesc = difficultyOptions.find(opt => opt.value === state.difficulty)?.description || '';
 </script>
 
 <div class="game-controls bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 sm:p-4 transition-colors duration-300">
   <h2 class="text-base sm:text-lg md:text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200 text-center transition-colors duration-300">Game Controls</h2>
   
   <div class="flex gap-3 sm:gap-4 justify-center flex-wrap">
+    <!-- Difficulty Selector styled as button -->
+    <div class="relative">
+      <select
+        id="difficulty-select"
+        title={currentDifficultyDesc}
+        class="appearance-none px-6 sm:px-8 py-3 sm:py-4 bg-purple-500 text-white text-sm sm:text-base rounded-full hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 shadow-md hover:shadow-lg min-w-[120px] sm:min-w-[140px] min-h-[48px] font-medium cursor-pointer pr-10 sm:pr-12 text-center focus:outline-none focus:ring-2 focus:ring-purple-300"
+        value={state.difficulty}
+        onchange={handleDifficultyChange}
+        disabled={state.isCreatingGame || state.isMakingMove}
+      >
+        {#each difficultyOptions as option}
+          <option value={option.value} class="bg-white text-gray-900 py-2 px-4 rounded">
+            {option.label}
+          </option>
+        {/each}
+      </select>
+      <!-- Custom dropdown arrow -->
+      <div class="absolute inset-y-0 right-0 flex items-center pr-3 sm:pr-4 pointer-events-none">
+        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+      </div>
+    </div>
     <button
       class="px-6 sm:px-8 py-3 sm:py-4 bg-blue-500 text-white text-sm sm:text-base rounded-full hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 shadow-md hover:shadow-lg min-w-[120px] sm:min-w-[140px] min-h-[48px] font-medium"
       onclick={handleNewGame}
@@ -48,6 +89,15 @@
       >
         <span class="hidden sm:inline">🔄 Reset</span>
         <span class="sm:hidden">🔄</span>
+      </button>
+      
+      <button
+        class="px-6 sm:px-8 py-3 sm:py-4 bg-orange-500 text-white text-sm sm:text-base rounded-full hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 shadow-md hover:shadow-lg min-w-[120px] sm:min-w-[140px] min-h-[48px] font-medium"
+        onclick={handleUndo}
+        disabled={state.isCreatingGame || state.isMakingMove || state.moveHistory.length === 0}
+      >
+        <span class="hidden sm:inline">↶ Undo</span>
+        <span class="sm:hidden">↶</span>
       </button>
       
       {#if !state.currentGame.is_complete}

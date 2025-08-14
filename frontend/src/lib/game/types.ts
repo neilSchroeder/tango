@@ -180,6 +180,30 @@ export const PUZZLE_CONFIGS: { [key: string]: PuzzleConfig } = {
     timeWeight: 2,
     moveWeight: 3
   },
+  medium: {
+    name: 'Medium',
+    startingPiecesMin: 6,
+    startingPiecesMax: 10,
+    constraintProbability: 0.25,
+    maxAttempts: 10,
+    baseScore: 200,
+    parTime: 240, // 4 minutes
+    parMoves: 25,
+    timeWeight: 3,
+    moveWeight: 4
+  },
+  hard: {
+    name: 'Hard',
+    startingPiecesMin: 4,
+    startingPiecesMax: 8,
+    constraintProbability: 0.35,
+    maxAttempts: 10,
+    baseScore: 300,
+    parTime: 180, // 3 minutes
+    parMoves: 20,
+    timeWeight: 4,
+    moveWeight: 5
+  },
   standard: {
     name: 'Standard',
     startingPiecesMin: 6,

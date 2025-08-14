@@ -55,6 +55,7 @@
               {col}
               piece={gameState.currentGame.board[row][col]}
               isLocked={gameState.currentGame.locked_tiles[row][col]}
+              isGameComplete={gameState.currentGame.is_complete}
               horizontalConstraint={getConstraint(gameState.currentGame.h_constraints, row, col, 5)}
               verticalConstraint={getConstraint(gameState.currentGame.v_constraints, row, col, 5)}
               hasError={errorStore.hasError(row, col)}

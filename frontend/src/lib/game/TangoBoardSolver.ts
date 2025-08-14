@@ -386,6 +386,137 @@ export class TangoBoardSolver {
       }
     }
 
+    // Apply advanced balance rule with constraint inference
+    madeChanges = this.applyAdvancedBalanceRule(board) || madeChanges;
+
+    return madeChanges;
+  }
+
+  /**
+   * Apply advanced balance rule: If a row/column has 3 filled tiles and 3 empty tiles,
+   * and there's an 'x' constraint between two empty tiles, then the third empty tile
+   * can be inferred based on the balance rule.
+   * 
+   * Example: _ x _ _ S M M → _ x _ S S M M
+   * The third empty position must be S to satisfy the balance rule (3 S, 3 M)
+   */
+  private applyAdvancedBalanceRule(board: PieceType[][]): boolean {
+    let madeChanges = false;
+
+    // Check rows
+    for (let row = 0; row < this.size; row++) {
+      madeChanges = this.applyAdvancedBalanceForRow(board, row) || madeChanges;
+    }
+
+    // Check columns
+    for (let col = 0; col < this.size; col++) {
+      madeChanges = this.applyAdvancedBalanceForColumn(board, col) || madeChanges;
+    }
+
+    return madeChanges;
+  }
+
+  /**
+   * Apply advanced balance rule for a specific row
+   */
+  private applyAdvancedBalanceForRow(board: PieceType[][], row: number): boolean {
+    let madeChanges = false;
+    
+    const counts = this.countPiecesInRow(board, row);
+    const emptyCount = this.size - counts.suns - counts.moons;
+    
+    // Only apply if we have exactly 3 filled and 3 empty tiles
+    if (counts.suns + counts.moons !== 3 || emptyCount !== 3) {
+      return false;
+    }
+    
+    // Find empty positions and constraints between them
+    const emptyPositions: number[] = [];
+    for (let col = 0; col < this.size; col++) {
+      if (board[row][col] === PieceType.EMPTY) {
+        emptyPositions.push(col);
+      }
+    }
+    
+    // Look for 'x' constraints between empty positions
+    for (let i = 0; i < emptyPositions.length - 1; i++) {
+      const pos1 = emptyPositions[i];
+      const pos2 = emptyPositions[i + 1];
+      
+      // Check if there's an 'x' constraint between these positions
+      if (pos2 === pos1 + 1 && this.hConstraints[row][pos1] === ConstraintType.DIFFERENT) {
+        // We have an 'x' constraint between two consecutive empty positions
+        // Find the third empty position
+        const thirdPos = emptyPositions.find(pos => pos !== pos1 && pos !== pos2);
+        if (thirdPos !== undefined) {
+          // Determine what piece type is needed to balance
+          const neededSuns = MAX_PIECES_PER_ROW_COL - counts.suns;
+          const neededMoons = MAX_PIECES_PER_ROW_COL - counts.moons;
+          
+          // If we need more of one type, place it in the third position
+          if (neededSuns > neededMoons && this.canPlacePiece(board, row, thirdPos, PieceType.SUN)) {
+            board[row][thirdPos] = PieceType.SUN;
+            madeChanges = true;
+          } else if (neededMoons > neededSuns && this.canPlacePiece(board, row, thirdPos, PieceType.MOON)) {
+            board[row][thirdPos] = PieceType.MOON;
+            madeChanges = true;
+          }
+        }
+      }
+    }
+    
+    return madeChanges;
+  }
+
+  /**
+   * Apply advanced balance rule for a specific column
+   */
+  private applyAdvancedBalanceForColumn(board: PieceType[][], col: number): boolean {
+    let madeChanges = false;
+    
+    const counts = this.countPiecesInColumn(board, col);
+    const emptyCount = this.size - counts.suns - counts.moons;
+    
+    // Only apply if we have exactly 3 filled and 3 empty tiles
+    if (counts.suns + counts.moons !== 3 || emptyCount !== 3) {
+      return false;
+    }
+    
+    // Find empty positions and constraints between them
+    const emptyPositions: number[] = [];
+    for (let row = 0; row < this.size; row++) {
+      if (board[row][col] === PieceType.EMPTY) {
+        emptyPositions.push(row);
+      }
+    }
+    
+    // Look for 'x' constraints between empty positions
+    for (let i = 0; i < emptyPositions.length - 1; i++) {
+      const pos1 = emptyPositions[i];
+      const pos2 = emptyPositions[i + 1];
+      
+      // Check if there's an 'x' constraint between these positions
+      if (pos2 === pos1 + 1 && this.vConstraints[pos1][col] === ConstraintType.DIFFERENT) {
+        // We have an 'x' constraint between two consecutive empty positions
+        // Find the third empty position
+        const thirdPos = emptyPositions.find(pos => pos !== pos1 && pos !== pos2);
+        if (thirdPos !== undefined) {
+          // Determine what piece type is needed to balance
+          const neededSuns = MAX_PIECES_PER_ROW_COL - counts.suns;
+          const neededMoons = MAX_PIECES_PER_ROW_COL - counts.moons;
+          
+          // If we need more of one type, place it in the third position
+          if (neededSuns > neededMoons && this.canPlacePiece(board, thirdPos, col, PieceType.SUN)) {
+            board[thirdPos][col] = PieceType.SUN;
+            madeChanges = true;
+          } else if (neededMoons > neededSuns && this.canPlacePiece(board, thirdPos, col, PieceType.MOON)) {
+            board[thirdPos][col] = PieceType.MOON;
+            madeChanges = true;
+          }
+        }
+      }
+    }
+    
     return madeChanges;
   }
 
@@ -1258,6 +1389,10 @@ export class TangoBoardSolver {
     const balanceMove = this.checkBalanceMove(board, row, col);
     if (balanceMove) return balanceMove;
 
+    // Check for advanced balance rule with constraint inference
+    const advancedBalanceMove = this.checkAdvancedBalanceMove(board, row, col);
+    if (advancedBalanceMove) return advancedBalanceMove;
+
     // Check for forced moves (only one valid option)
     const forcedMove = this.checkForcedMove(board, row, col);
     if (forcedMove) return forcedMove;
@@ -1495,6 +1630,173 @@ export class TangoBoardSolver {
       }
     }
 
+    return null;
+  }
+
+  /**
+   * Check for advanced balance moves with constraint inference
+   */
+  private checkAdvancedBalanceMove(board: PieceType[][], row: number, col: number): {
+    row: number;
+    col: number;
+    piece: PieceType;
+    reasoning: string;
+    confidence: number;
+    moveType: string;
+  } | null {
+    
+    // Check row-based advanced balance pattern
+    const rowMove = this.checkAdvancedBalanceInRow(board, row, col);
+    if (rowMove) return rowMove;
+    
+    // Check column-based advanced balance pattern
+    const colMove = this.checkAdvancedBalanceInColumn(board, row, col);
+    if (colMove) return colMove;
+    
+    return null;
+  }
+
+  /**
+   * Check for advanced balance pattern in the row
+   */
+  private checkAdvancedBalanceInRow(board: PieceType[][], row: number, col: number): {
+    row: number;
+    col: number;
+    piece: PieceType;
+    reasoning: string;
+    confidence: number;
+    moveType: string;
+  } | null {
+    
+    const counts = this.countPiecesInRow(board, row);
+    const emptyCount = this.size - counts.suns - counts.moons;
+    
+    // Only apply if we have exactly 3 filled and 3 empty tiles
+    if (counts.suns + counts.moons !== 3 || emptyCount !== 3) {
+      return null;
+    }
+    
+    // Find empty positions in this row
+    const emptyPositions: number[] = [];
+    for (let c = 0; c < this.size; c++) {
+      if (board[row][c] === PieceType.EMPTY) {
+        emptyPositions.push(c);
+      }
+    }
+    
+    // Check if the current position is part of an advanced balance pattern
+    if (!emptyPositions.includes(col)) {
+      return null;
+    }
+    
+    // Look for 'x' constraints between empty positions
+    for (let i = 0; i < emptyPositions.length - 1; i++) {
+      const pos1 = emptyPositions[i];
+      const pos2 = emptyPositions[i + 1];
+      
+      // Check if there's an 'x' constraint between these consecutive empty positions
+      if (pos2 === pos1 + 1 && this.hConstraints[row][pos1] === ConstraintType.DIFFERENT) {
+        // Find the third empty position (not involved in the constraint)
+        const thirdPos = emptyPositions.find(pos => pos !== pos1 && pos !== pos2);
+        
+        if (thirdPos === col) {
+          // This is the position we can infer!
+          const neededSuns = MAX_PIECES_PER_ROW_COL - counts.suns;
+          const neededMoons = MAX_PIECES_PER_ROW_COL - counts.moons;
+          
+          if (neededSuns > neededMoons && this.canPlacePiece(board, row, col, PieceType.SUN)) {
+            return {
+              row, col,
+              piece: PieceType.SUN,
+              reasoning: `Row ${row + 1} has 3 filled tiles and 3 empty tiles. There's an 'x' constraint between positions ${pos1 + 1} and ${pos2 + 1}, which limits their placement options. To satisfy the balance rule (3 suns, 3 moons), position (${row + 1}, ${col + 1}) must be sun.`,
+              confidence: 90,
+              moveType: 'balance'
+            };
+          } else if (neededMoons > neededSuns && this.canPlacePiece(board, row, col, PieceType.MOON)) {
+            return {
+              row, col,
+              piece: PieceType.MOON,
+              reasoning: `Row ${row + 1} has 3 filled tiles and 3 empty tiles. There's an 'x' constraint between positions ${pos1 + 1} and ${pos2 + 1}, which limits their placement options. To satisfy the balance rule (3 suns, 3 moons), position (${row + 1}, ${col + 1}) must be moon.`,
+              confidence: 90,
+              moveType: 'balance'
+            };
+          }
+        }
+      }
+    }
+    
+    return null;
+  }
+
+  /**
+   * Check for advanced balance pattern in the column
+   */
+  private checkAdvancedBalanceInColumn(board: PieceType[][], row: number, col: number): {
+    row: number;
+    col: number;
+    piece: PieceType;
+    reasoning: string;
+    confidence: number;
+    moveType: string;
+  } | null {
+    
+    const counts = this.countPiecesInColumn(board, col);
+    const emptyCount = this.size - counts.suns - counts.moons;
+    
+    // Only apply if we have exactly 3 filled and 3 empty tiles
+    if (counts.suns + counts.moons !== 3 || emptyCount !== 3) {
+      return null;
+    }
+    
+    // Find empty positions in this column
+    const emptyPositions: number[] = [];
+    for (let r = 0; r < this.size; r++) {
+      if (board[r][col] === PieceType.EMPTY) {
+        emptyPositions.push(r);
+      }
+    }
+    
+    // Check if the current position is part of an advanced balance pattern
+    if (!emptyPositions.includes(row)) {
+      return null;
+    }
+    
+    // Look for 'x' constraints between empty positions
+    for (let i = 0; i < emptyPositions.length - 1; i++) {
+      const pos1 = emptyPositions[i];
+      const pos2 = emptyPositions[i + 1];
+      
+      // Check if there's an 'x' constraint between these consecutive empty positions
+      if (pos2 === pos1 + 1 && this.vConstraints[pos1][col] === ConstraintType.DIFFERENT) {
+        // Find the third empty position (not involved in the constraint)
+        const thirdPos = emptyPositions.find(pos => pos !== pos1 && pos !== pos2);
+        
+        if (thirdPos === row) {
+          // This is the position we can infer!
+          const neededSuns = MAX_PIECES_PER_ROW_COL - counts.suns;
+          const neededMoons = MAX_PIECES_PER_ROW_COL - counts.moons;
+          
+          if (neededSuns > neededMoons && this.canPlacePiece(board, row, col, PieceType.SUN)) {
+            return {
+              row, col,
+              piece: PieceType.SUN,
+              reasoning: `Column ${col + 1} has 3 filled tiles and 3 empty tiles. There's an 'x' constraint between positions ${pos1 + 1} and ${pos2 + 1}, which limits their placement options. To satisfy the balance rule (3 suns, 3 moons), position (${row + 1}, ${col + 1}) must be sun.`,
+              confidence: 90,
+              moveType: 'balance'
+            };
+          } else if (neededMoons > neededSuns && this.canPlacePiece(board, row, col, PieceType.MOON)) {
+            return {
+              row, col,
+              piece: PieceType.MOON,
+              reasoning: `Column ${col + 1} has 3 filled tiles and 3 empty tiles. There's an 'x' constraint between positions ${pos1 + 1} and ${pos2 + 1}, which limits their placement options. To satisfy the balance rule (3 suns, 3 moons), position (${row + 1}, ${col + 1}) must be moon.`,
+              confidence: 90,
+              moveType: 'balance'
+            };
+          }
+        }
+      }
+    }
+    
     return null;
   }
 

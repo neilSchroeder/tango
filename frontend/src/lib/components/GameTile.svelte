@@ -8,6 +8,7 @@
     col: number;
     piece: PieceType;
     isLocked: boolean;
+    isGameComplete?: boolean;
     horizontalConstraint?: ConstraintType;
     verticalConstraint?: ConstraintType;
     hasError?: boolean;
@@ -20,6 +21,7 @@
     col, 
     piece, 
     isLocked, 
+    isGameComplete = false,
     horizontalConstraint = 'none', 
     verticalConstraint = 'none',
     hasError = false,
@@ -31,7 +33,7 @@
   let isProcessingClick = false;
 
   async function handleClick() {
-    if (isLocked || gameStore.state.isMakingMove || isProcessingClick) return;
+    if (isLocked || isGameComplete || gameStore.state.isMakingMove || isProcessingClick) return;
     
     try {
       isProcessingClick = true;
@@ -58,6 +60,7 @@
     if (hasConstraintViolation) classes.push('game-tile--constraint-violation');
     else if (hasError) classes.push('game-tile--error');
     if (isHinted) classes.push('game-tile--hinted');
+    if (isGameComplete) classes.push('game-tile--completed');
     
     return classes.join(' ');
   });
@@ -67,7 +70,7 @@
   <button
     class={tileClasses()}
     onclick={handleClick}
-    disabled={isLocked || gameStore.state.isMakingMove}
+    disabled={isLocked || isGameComplete || gameStore.state.isMakingMove}
     aria-label="Game tile at row {row + 1}, column {col + 1}: {piece}"
   >
     <span class="game-piece">
