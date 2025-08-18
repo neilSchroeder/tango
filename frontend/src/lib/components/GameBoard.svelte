@@ -7,7 +7,8 @@
   import DelayedValidationErrors from './DelayedValidationErrors.svelte';
   import type { ConstraintType } from '../api/types';
 
-  const { state: gameState } = gameStore;
+  // Access state reactively using Svelte 5 runes
+  const gameState = $derived(gameStore.state);
 
   // Track previous game state to prevent unnecessary updates
   let previousGameId: string | null = null;

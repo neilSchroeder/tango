@@ -3,7 +3,8 @@
  * Run this to verify the game engine works correctly
  */
 
-import { gameService, PieceType, type GameState } from './index';
+import { gameService, PieceType, ConstraintType, type GameState } from './index';
+import { TangoBoardSolver } from './TangoBoardSolver';
 
 export function runGameDemo(): void {
   console.log('🎮 Starting Tango Game Demo');
@@ -119,6 +120,122 @@ function findEmptyPosition(board: PieceType[][]): [number, number] | null {
     }
   }
   return null;
+}
+
+/**
+ * Test the new advanced balance rules
+ */
+export async function testAdvancedBalanceRules(): Promise<void> {
+  console.log('🧪 Testing Advanced Balance Rules');
+  
+  try {
+    // Test the two X constraint pattern: A _x_ _x_ _ → A B x A x B
+    console.log('\n📋 Test: Two X Constraint Pattern');
+    await testTwoXConstraintPattern();
+    
+    // Test the triple equals pattern: A _=_ _=_ _ → A B B A A B  
+    console.log('\n📋 Test: Triple Equals Pattern');
+    await testTripleEqualsPattern();
+    
+    console.log('\n✅ All advanced balance rule tests completed');
+  } catch (error) {
+    console.error('❌ Error testing advanced balance rules:', error);
+  }
+}
+
+async function testTwoXConstraintPattern(): Promise<void> {
+  // Create a test board with the pattern A _x_ _x_ _
+  // We'll create a minimal test case
+  const board: PieceType[][] = Array(6).fill(null).map(() => Array(6).fill(PieceType.EMPTY));
+  const hConstraints: ConstraintType[][] = Array(6).fill(null).map(() => Array(5).fill(ConstraintType.NONE));
+  const vConstraints: ConstraintType[][] = Array(5).fill(null).map(() => Array(6).fill(ConstraintType.NONE));
+  const lockedTiles: boolean[][] = Array(6).fill(null).map(() => Array(6).fill(false));
+  
+  // Set up pattern: S _ x _ x _ at positions (0,0) to (0,5)
+  board[0][0] = PieceType.SUN;  // A = SUN
+  lockedTiles[0][0] = true;
+  hConstraints[0][2] = ConstraintType.DIFFERENT; // x constraint between positions 2-3
+  hConstraints[0][4] = ConstraintType.DIFFERENT; // x constraint between positions 4-5
+  
+  console.log('Initial pattern: S _ x _ x _');
+  console.log('Expected result: S M x S x M');
+  
+  // Create solver and apply the pattern
+  const solver = new TangoBoardSolver(
+    board, hConstraints, vConstraints, lockedTiles
+  );
+  
+  const solutions = solver.findAllSolutions(1);
+  
+  if (solutions.length > 0) {
+    const solution = solutions[0];
+    const resultRow = solution[0].slice(0, 6);
+    console.log('Actual result:', resultRow.map(p => 
+      p === PieceType.SUN ? 'S' : 
+      p === PieceType.MOON ? 'M' : '_'
+    ).join(' '));
+    
+    // Verify the pattern
+    const expected = [PieceType.SUN, PieceType.MOON, PieceType.SUN, PieceType.MOON];
+    const actual = [resultRow[0], resultRow[1], resultRow[3], resultRow[5]];
+    
+    if (JSON.stringify(expected) === JSON.stringify(actual)) {
+      console.log('✅ Two X constraint pattern test PASSED');
+    } else {
+      console.log('❌ Two X constraint pattern test FAILED');
+      console.log('Expected:', expected);
+      console.log('Actual:', actual);
+    }
+  } else {
+    console.log('❌ No solution found for two X constraint pattern');
+  }
+}
+
+async function testTripleEqualsPattern(): Promise<void> {
+  // Create a test board with the pattern A _=_ _=_ _
+  const board: PieceType[][] = Array(6).fill(null).map(() => Array(6).fill(PieceType.EMPTY));
+  const hConstraints: ConstraintType[][] = Array(6).fill(null).map(() => Array(5).fill(ConstraintType.NONE));
+  const vConstraints: ConstraintType[][] = Array(5).fill(null).map(() => Array(6).fill(ConstraintType.NONE));
+  const lockedTiles: boolean[][] = Array(6).fill(null).map(() => Array(6).fill(false));
+  
+  // Set up pattern: S _ = _ = _ at positions (0,0) to (0,5)
+  board[0][0] = PieceType.SUN;  // A = SUN
+  lockedTiles[0][0] = true;
+  hConstraints[0][2] = ConstraintType.SAME; // = constraint between positions 2-3
+  hConstraints[0][4] = ConstraintType.SAME; // = constraint between positions 4-5
+  
+  console.log('Initial pattern: S _ = _ = _');
+  console.log('Expected result: S M = M = S (which is S M M S S M when expanded)');
+  
+  // Create solver and apply the pattern
+  const solver = new TangoBoardSolver(
+    board, hConstraints, vConstraints, lockedTiles
+  );
+  
+  const solutions = solver.findAllSolutions(1);
+  
+  if (solutions.length > 0) {
+    const solution = solutions[0];
+    const resultRow = solution[0].slice(0, 6);
+    console.log('Actual result:', resultRow.map(p => 
+      p === PieceType.SUN ? 'S' : 
+      p === PieceType.MOON ? 'M' : '_'
+    ).join(' '));
+    
+    // Verify the pattern: A B B A A B → S M M S S M
+    const expected = [PieceType.SUN, PieceType.MOON, PieceType.MOON, PieceType.SUN, PieceType.SUN, PieceType.MOON];
+    const actual = resultRow;
+    
+    if (JSON.stringify(expected) === JSON.stringify(actual)) {
+      console.log('✅ Triple equals pattern test PASSED');
+    } else {
+      console.log('❌ Triple equals pattern test FAILED');
+      console.log('Expected:', expected);
+      console.log('Actual:', actual);
+    }
+  } else {
+    console.log('❌ No solution found for triple equals pattern');
+  }
 }
 
 // Export the function for use in components

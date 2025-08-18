@@ -24,17 +24,17 @@
   --tile-size: 5rem;
   --tile-font-size: 2.5rem;
   --tile-border-radius: 0.375rem;
-  --piece-size: 3.5rem;  /* Adjusted to medium size - change this value to resize pieces */
+  --piece-size: 4rem;  /* Increased from 3.5rem to 4rem for larger pieces */
   
   /* Mobile responsiveness - bigger sizes for better mobile experience */
   --mobile-tile-size: 4rem;
   --mobile-tile-font-size: 2rem;
-  --mobile-piece-size: 3rem;
+  --mobile-piece-size: 3.5rem;  /* Increased from 3rem to 3.5rem */
   
   /* Tablet responsiveness - medium sizes for tablets */
   --tablet-tile-size: 4.5rem;
   --tablet-tile-font-size: 2.25rem;
-  --tablet-piece-size: 3.25rem;
+  --tablet-piece-size: 3.75rem;  /* Increased from 3.25rem to 3.75rem */
   
   /* Color variables for easy customization */
   --sun-color: #f59e0b;      /* Amber/yellow for sun */
@@ -144,28 +144,17 @@
   box-shadow: none;
 }
 
-/* Game piece styling */
+/* Game piece styling - Updated for SVG icons */
 .game-piece {
-  font-size: var(--piece-size);
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   user-select: none;
-  font-weight: bold;
+  width: 100%;
+  height: 100%;
 }
 
-/* Responsive game piece sizing */
-@media (max-width: 640px) {
-  .game-piece {
-    font-size: var(--mobile-piece-size);
-  }
-}
-
-@media (min-width: 641px) and (max-width: 1024px) {
-  .game-piece {
-    font-size: var(--tablet-piece-size);
-  }
-}
-
-/* Piece type styling */
+/* Piece type styling - Simplified for SVG icons */
 .game-tile--sun {
   color: var(--sun-color);
 }

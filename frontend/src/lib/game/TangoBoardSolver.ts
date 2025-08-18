@@ -11,6 +11,89 @@ import {
   type HintResult 
 } from './types';
 
+/**
+ * Domain-based constraint system with CDCL (Conflict-Driven Clause Learning)
+ */
+interface VariableDomain {
+  position: [number, number];
+  possibleValues: Set<PieceType>;
+  isLocked: boolean;
+  decisionLevel?: number; // For CDCL: track when this assignment was made
+  reason?: ConflictClause; // For CDCL: why this value was assigned
+}
+
+interface DomainState {
+  domains: Map<string, VariableDomain>;
+  constraints: ConstraintNetwork;
+  decisionLevel: number; // Current decision level for CDCL
+  assignments: Assignment[]; // Assignment trail for CDCL
+}
+
+interface ConstraintNetwork {
+  directConstraints: Array<{
+    pos1: [number, number];
+    pos2: [number, number];
+    type: ConstraintType;
+  }>;
+  balanceConstraints: Array<{
+    type: 'row' | 'column';
+    index: number;
+  }>;
+  consecutiveConstraints: Array<{
+    positions: Array<[number, number]>;
+    direction: 'horizontal' | 'vertical';
+  }>;
+  learnedClauses: ConflictClause[]; // CDCL: Learned conflict clauses
+}
+
+/**
+ * CDCL (Conflict-Driven Clause Learning) Components
+ */
+interface Assignment {
+  variable: string; // Position key
+  value: PieceType;
+  decisionLevel: number;
+  isDecision: boolean; // true if decision, false if propagated
+  reason?: ConflictClause; // Why this assignment was made (for propagated assignments)
+}
+
+interface ConflictClause {
+  literals: Literal[]; // Variables that must not all be true simultaneously
+  learnedAt: number; // Decision level when this clause was learned
+  activity: number; // For clause deletion heuristics
+}
+
+interface Literal {
+  variable: string; // Position key
+  value: PieceType;
+  negated: boolean; // true = "variable must NOT be value", false = "variable must be value"
+}
+
+interface ConflictAnalysis {
+  conflictClause: ConflictClause;
+  backtrackLevel: number; // Level to backtrack to (non-chronological)
+}
+
+/**
+ * VSIDS (Variable State Independent Decaying Sum) Components
+ */
+interface VSIDSState {
+  variableActivities: Map<string, number>; // Activity scores for each variable
+  activityIncrement: number; // Current increment for activity bumps
+  decayFactor: number; // Factor by which activities decay (0.95 typical)
+  maxActivity: number; // Threshold for rescaling activities
+  conflictCount: number; // Number of conflicts encountered
+  lastRescale: number; // Last conflict count when activities were rescaled
+}
+
+interface VSIDSConfig {
+  enabled: boolean;
+  initialIncrement: number; // Starting activity increment (1.0 typical)
+  decayFactor: number; // Activity decay factor (0.95 typical)
+  rescaleThreshold: number; // Rescale when max activity exceeds this (1e20 typical)
+  rescaleFrequency: number; // Rescale every N conflicts if needed (1000 typical)
+}
+
 export class TangoBoardSolver {
   private originalBoard: PieceType[][];
   private hConstraints: ConstraintType[][];
@@ -18,6 +101,17 @@ export class TangoBoardSolver {
   private lockedTiles: boolean[][];
   private size = BOARD_SIZE;
   private emptyPositions: [number, number][];
+  
+  // New domain-based solving components
+  private useDomainBasedSolving = true; // Feature flag for domain-based approach
+  private useCDCL = true; // Feature flag for CDCL (Conflict-Driven Clause Learning)
+  private useVSIDS = true; // Feature flag for VSIDS variable ordering (DEFAULT: optimal performance)
+  private constraintNetwork: ConstraintNetwork;
+  private initialDomains: Map<string, VariableDomain>;
+  
+  // VSIDS (Variable State Independent Decaying Sum) components - PRIMARY solving method
+  private vsidsState: VSIDSState;
+  private vsidsConfig: VSIDSConfig;
 
   constructor(
     board: PieceType[][],
@@ -39,12 +133,1136 @@ export class TangoBoardSolver {
         }
       }
     }
+
+    // Initialize domain-based solving components
+    this.constraintNetwork = this.buildConstraintNetwork();
+    this.initialDomains = this.initializeDomains();
+    
+    // Initialize VSIDS components
+    this.vsidsConfig = this.createVSIDSConfig();
+    this.vsidsState = this.initializeVSIDS();
   }
 
   /**
-   * Find all valid solutions using constraint propagation + backtracking
+   * Build constraint network for domain-based solving
+   */
+  private buildConstraintNetwork(): ConstraintNetwork {
+    const directConstraints: Array<{
+      pos1: [number, number];
+      pos2: [number, number];
+      type: ConstraintType;
+    }> = [];
+
+    // Build horizontal constraints
+    for (let row = 0; row < this.size; row++) {
+      for (let col = 0; col < this.size - 1; col++) {
+        if (this.hConstraints[row][col] !== ConstraintType.NONE) {
+          directConstraints.push({
+            pos1: [row, col],
+            pos2: [row, col + 1],
+            type: this.hConstraints[row][col]
+          });
+        }
+      }
+    }
+
+    // Build vertical constraints
+    for (let row = 0; row < this.size - 1; row++) {
+      for (let col = 0; col < this.size; col++) {
+        if (this.vConstraints[row][col] !== ConstraintType.NONE) {
+          directConstraints.push({
+            pos1: [row, col],
+            pos2: [row + 1, col],
+            type: this.vConstraints[row][col]
+          });
+        }
+      }
+    }
+
+    // Build balance constraints
+    const balanceConstraints: Array<{
+      type: 'row' | 'column';
+      index: number;
+    }> = [];
+
+    for (let i = 0; i < this.size; i++) {
+      balanceConstraints.push({ type: 'row', index: i });
+      balanceConstraints.push({ type: 'column', index: i });
+    }
+
+    // Build consecutive constraints
+    const consecutiveConstraints: Array<{
+      positions: Array<[number, number]>;
+      direction: 'horizontal' | 'vertical';
+    }> = [];
+
+    // Horizontal consecutive constraints
+    for (let row = 0; row < this.size; row++) {
+      for (let col = 0; col <= this.size - 3; col++) {
+        consecutiveConstraints.push({
+          positions: [[row, col], [row, col + 1], [row, col + 2]],
+          direction: 'horizontal'
+        });
+      }
+    }
+
+    // Vertical consecutive constraints
+    for (let row = 0; row <= this.size - 3; row++) {
+      for (let col = 0; col < this.size; col++) {
+        consecutiveConstraints.push({
+          positions: [[row, col], [row + 1, col], [row + 2, col]],
+          direction: 'vertical'
+        });
+      }
+    }
+
+    return {
+      directConstraints,
+      balanceConstraints,
+      consecutiveConstraints,
+      learnedClauses: [] // Initialize empty learned clauses for CDCL
+    };
+  }
+
+  /**
+   * Initialize domains for all variables
+   */
+  private initializeDomains(): Map<string, VariableDomain> {
+    const domains = new Map<string, VariableDomain>();
+
+    for (let row = 0; row < this.size; row++) {
+      for (let col = 0; col < this.size; col++) {
+        const key = `${row},${col}`;
+        const isLocked = this.lockedTiles[row][col];
+        
+        if (isLocked) {
+          // Locked tiles have only their current value in domain
+          domains.set(key, {
+            position: [row, col],
+            possibleValues: new Set([this.originalBoard[row][col]]),
+            isLocked: true,
+            decisionLevel: 0, // Locked tiles are at decision level 0
+            reason: undefined
+          });
+        } else {
+          // Empty tiles can be either SUN or MOON
+          domains.set(key, {
+            position: [row, col],
+            possibleValues: new Set([PieceType.SUN, PieceType.MOON]),
+            isLocked: false,
+            decisionLevel: undefined,
+            reason: undefined
+          });
+        }
+      }
+    }
+
+    return domains;
+  }
+
+  /**
+   * Create VSIDS configuration with default parameters
+   */
+  private createVSIDSConfig(): VSIDSConfig {
+    return {
+      enabled: true,
+      initialIncrement: 1.0,
+      decayFactor: 0.95, // Standard decay factor
+      rescaleThreshold: 1e20, // Rescale when activities get too large
+      rescaleFrequency: 1000 // Rescale every 1000 conflicts if needed
+    };
+  }
+
+  /**
+   * Initialize VSIDS state with default values
+   */
+  private initializeVSIDS(): VSIDSState {
+    const variableActivities = new Map<string, number>();
+    
+    // Initialize all variables with zero activity
+    for (let row = 0; row < this.size; row++) {
+      for (let col = 0; col < this.size; col++) {
+        const key = `${row},${col}`;
+        if (!this.lockedTiles[row][col]) {
+          variableActivities.set(key, 0.0);
+        }
+      }
+    }
+
+    return {
+      variableActivities,
+      activityIncrement: this.vsidsConfig.initialIncrement,
+      decayFactor: this.vsidsConfig.decayFactor,
+      maxActivity: 0.0,
+      conflictCount: 0,
+      lastRescale: 0
+    };
+  }
+
+  /**
+   * Create domain state for solving with CDCL support
+   */
+  private createDomainState(): DomainState {
+    // Deep copy of initial domains
+    const domains = new Map<string, VariableDomain>();
+    for (const [key, domain] of this.initialDomains) {
+      domains.set(key, {
+        position: [...domain.position] as [number, number],
+        possibleValues: new Set(domain.possibleValues),
+        isLocked: domain.isLocked,
+        decisionLevel: domain.isLocked ? 0 : undefined, // Locked tiles are at level 0
+        reason: undefined
+      });
+    }
+
+    return {
+      domains,
+      constraints: this.constraintNetwork,
+      decisionLevel: 0, // Start at decision level 0
+      assignments: [] // Empty assignment trail
+    };
+  }
+
+  /**
+   * Convert domain state back to board representation
+   */
+  private domainStateToBoard(domainState: DomainState): PieceType[][] {
+    const board: PieceType[][] = Array(this.size).fill(null).map(() => 
+      Array(this.size).fill(PieceType.EMPTY)
+    );
+
+    for (const [key, domain] of domainState.domains) {
+      const [row, col] = domain.position;
+      if (domain.possibleValues.size === 1) {
+        board[row][col] = Array.from(domain.possibleValues)[0];
+      } else if (domain.isLocked) {
+        // For locked tiles, take the original value
+        board[row][col] = this.originalBoard[row][col];
+      }
+      // Otherwise leave as EMPTY (unassigned)
+    }
+
+    return board;
+  }
+
+  // ===== CDCL (Conflict-Driven Clause Learning) Implementation =====
+
+  /**
+   * Make a decision assignment at the current decision level
+   */
+  private makeDecision(domainState: DomainState, variable: string, value: PieceType): void {
+    domainState.decisionLevel++;
+    const domain = domainState.domains.get(variable);
+    if (domain) {
+      domain.possibleValues = new Set([value]);
+      domain.decisionLevel = domainState.decisionLevel;
+      domain.reason = undefined; // Decisions have no reason
+    }
+
+    const assignment: Assignment = {
+      variable,
+      value,
+      decisionLevel: domainState.decisionLevel,
+      isDecision: true,
+      reason: undefined
+    };
+    domainState.assignments.push(assignment);
+  }
+
+  /**
+   * Make a propagated assignment (implied by constraints)
+   */
+  private makeAssignment(domainState: DomainState, variable: string, value: PieceType, reason?: ConflictClause): void {
+    const domain = domainState.domains.get(variable);
+    if (domain) {
+      domain.possibleValues = new Set([value]);
+      domain.decisionLevel = domainState.decisionLevel;
+      domain.reason = reason;
+    }
+
+    const assignment: Assignment = {
+      variable,
+      value,
+      decisionLevel: domainState.decisionLevel,
+      isDecision: false,
+      reason
+    };
+    domainState.assignments.push(assignment);
+  }
+
+  /**
+   * Analyze conflict and learn a conflict clause
+   */
+  private analyzeConflict(domainState: DomainState, conflictingVars: string[]): ConflictAnalysis {
+    // Simple conflict analysis: find the decision level to backtrack to
+    let backtrackLevel = 0;
+    const conflictLiterals: Literal[] = [];
+
+    // For each variable in the conflict, add it to the learned clause
+    for (const varKey of conflictingVars) {
+      const domain = domainState.domains.get(varKey);
+      if (domain && domain.possibleValues.size === 1) {
+        const value = Array.from(domain.possibleValues)[0];
+        conflictLiterals.push({
+          variable: varKey,
+          value,
+          negated: true // We want to prevent this assignment
+        });
+
+        if (domain.decisionLevel !== undefined) {
+          backtrackLevel = Math.max(backtrackLevel, domain.decisionLevel - 1);
+        }
+      }
+    }
+
+    const conflictClause: ConflictClause = {
+      literals: conflictLiterals,
+      learnedAt: domainState.decisionLevel,
+      activity: 1.0 // Start with activity 1.0
+    };
+
+    return {
+      conflictClause,
+      backtrackLevel: Math.max(0, backtrackLevel)
+    };
+  }
+
+  /**
+   * Learn a conflict clause and add it to the constraint network
+   */
+  private learnClause(domainState: DomainState, clause: ConflictClause): void {
+    // Add to learned clauses
+    domainState.constraints.learnedClauses.push(clause);
+
+    // Keep only the most recent clauses to prevent memory bloat
+    const maxLearnedClauses = 1000;
+    if (domainState.constraints.learnedClauses.length > maxLearnedClauses) {
+      // Remove oldest clauses (simple FIFO strategy)
+      domainState.constraints.learnedClauses.splice(0, 100);
+    }
+  }
+
+  /**
+   * Check if learned clauses are satisfied
+   */
+  private checkLearnedClauses(domainState: DomainState): string[] {
+    const conflicts: string[] = [];
+
+    for (const clause of domainState.constraints.learnedClauses) {
+      let satisfiedLiterals = 0;
+      let unsatisfiedLiterals = 0;
+      const conflictingVars: string[] = [];
+
+      for (const literal of clause.literals) {
+        const domain = domainState.domains.get(literal.variable);
+        if (!domain) continue;
+
+        if (domain.possibleValues.size === 1) {
+          const assignedValue = Array.from(domain.possibleValues)[0];
+          const literalSatisfied = literal.negated ? 
+            (assignedValue !== literal.value) : 
+            (assignedValue === literal.value);
+
+          if (literalSatisfied) {
+            satisfiedLiterals++;
+          } else {
+            unsatisfiedLiterals++;
+            conflictingVars.push(literal.variable);
+          }
+        }
+      }
+
+      // If all literals are false, we have a conflict
+      if (satisfiedLiterals === 0 && unsatisfiedLiterals === clause.literals.length) {
+        conflicts.push(...conflictingVars);
+      }
+    }
+
+    return conflicts;
+  }
+
+  /**
+   * Backtrack to a specific decision level
+   */
+  private backtrack(domainState: DomainState, targetLevel: number): void {
+    // Remove assignments beyond the target level
+    const newAssignments: Assignment[] = [];
+    for (const assignment of domainState.assignments) {
+      if (assignment.decisionLevel <= targetLevel) {
+        newAssignments.push(assignment);
+      } else {
+        // Reset the domain for this variable
+        const domain = domainState.domains.get(assignment.variable);
+        if (domain && !domain.isLocked) {
+          // Restore original possible values from initial domains
+          const initialDomain = this.initialDomains.get(assignment.variable);
+          if (initialDomain) {
+            domain.possibleValues = new Set(initialDomain.possibleValues);
+            domain.decisionLevel = undefined;
+            domain.reason = undefined;
+          }
+        }
+      }
+    }
+
+    domainState.assignments = newAssignments;
+    domainState.decisionLevel = targetLevel;
+  }
+
+  /**
+   * Helper method to check if two positions are equal
+   */
+  private positionsEqual(pos1: [number, number], pos2: [number, number]): boolean {
+    return pos1[0] === pos2[0] && pos1[1] === pos2[1];
+  }
+
+  // ===== VSIDS (Variable State Independent Decaying Sum) Implementation =====
+
+  /**
+   * Bump activity of variables involved in a conflict
+   */
+  private bumpVariableActivity(domainState: DomainState, variables: string[]): void {
+    if (!this.useVSIDS) return;
+
+    for (const variable of variables) {
+      const currentActivity = this.vsidsState.variableActivities.get(variable) || 0;
+      const newActivity = currentActivity + this.vsidsState.activityIncrement;
+      
+      this.vsidsState.variableActivities.set(variable, newActivity);
+      this.vsidsState.maxActivity = Math.max(this.vsidsState.maxActivity, newActivity);
+    }
+
+    // Rescale activities if they get too large
+    if (this.vsidsState.maxActivity > this.vsidsConfig.rescaleThreshold) {
+      this.rescaleActivities();
+    }
+  }
+
+  /**
+   * Decay all variable activities
+   */
+  private decayVariableActivities(): void {
+    if (!this.useVSIDS) return;
+
+    // Increase the activity increment (equivalent to decaying all activities)
+    this.vsidsState.activityIncrement /= this.vsidsState.decayFactor;
+
+    // Periodically rescale to prevent numerical issues
+    this.vsidsState.conflictCount++;
+    if (this.vsidsState.conflictCount - this.vsidsState.lastRescale >= this.vsidsConfig.rescaleFrequency) {
+      this.rescaleActivities();
+    }
+  }
+
+  /**
+   * Rescale all activities to prevent numerical overflow
+   */
+  private rescaleActivities(): void {
+    const rescaleFactor = 1e-20; // Scale down by a large factor
+    let newMaxActivity = 0;
+
+    for (const [variable, activity] of this.vsidsState.variableActivities) {
+      const newActivity = activity * rescaleFactor;
+      this.vsidsState.variableActivities.set(variable, newActivity);
+      newMaxActivity = Math.max(newMaxActivity, newActivity);
+    }
+
+    this.vsidsState.maxActivity = newMaxActivity;
+    this.vsidsState.activityIncrement *= rescaleFactor;
+    this.vsidsState.lastRescale = this.vsidsState.conflictCount;
+  }
+
+  /**
+   * Select variable using VSIDS heuristic
+   */
+  private selectVariableVSIDS(domainState: DomainState): string | null {
+    let bestVar: string | null = null;
+    let bestScore = -1;
+
+    // Find unassigned variable with highest activity
+    for (const [varKey, domain] of domainState.domains) {
+      if (!domain.isLocked && domain.possibleValues.size > 1) {
+        // Combine activity score with domain size (prefer smaller domains)
+        const activity = this.vsidsState.variableActivities.get(varKey) || 0;
+        const domainSizePenalty = domain.possibleValues.size; // Smaller domains get higher priority
+        const score = activity + (1.0 / domainSizePenalty); // Activity + inverse domain size
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestVar = varKey;
+        }
+      }
+    }
+
+    return bestVar;
+  }
+
+  /**
+   * Select variable using either VSIDS or simple heuristic
+   */
+  private selectVariableWithHeuristic(domainState: DomainState): string | null {
+    if (this.useVSIDS) {
+      return this.selectVariableVSIDS(domainState);
+    } else {
+      // Fallback to simple smallest-domain-first heuristic
+      return this.selectVariable(domainState);
+    }
+  }
+
+  /**
+   * Domain-based constraint propagation with CDCL integration
+   */
+  private propagateConstraintsDomain(domainState: DomainState): boolean {
+    let changed = true;
+    let iterations = 0;
+    const maxIterations = 50;
+
+    while (changed && iterations < maxIterations) {
+      changed = false;
+      iterations++;
+
+      // Check learned clauses first for early conflict detection
+      const learnedConflicts = this.checkLearnedClauses(domainState);
+      if (learnedConflicts.length > 0) {
+        return false; // Conflict detected from learned clauses
+      }
+
+      // Apply direct constraints (SAME/DIFFERENT)
+      if (this.propagateDirectConstraintsDomain(domainState)) {
+        changed = true;
+      }
+
+      // Apply balance constraints
+      if (this.propagateBalanceConstraintsDomain(domainState)) {
+        changed = true;
+      }
+
+      // Apply consecutive constraints
+      if (this.propagateConsecutiveConstraintsDomain(domainState)) {
+        changed = true;
+      }
+
+      // Check for empty domains (conflicts)
+      for (const [key, domain] of domainState.domains) {
+        if (!domain.isLocked && domain.possibleValues.size === 0) {
+          return false; // Conflict detected
+        }
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Propagate direct constraints in domain space
+   */
+  private propagateDirectConstraintsDomain(domainState: DomainState): boolean {
+    let changed = false;
+
+    for (const constraint of domainState.constraints.directConstraints) {
+      const key1 = `${constraint.pos1[0]},${constraint.pos1[1]}`;
+      const key2 = `${constraint.pos2[0]},${constraint.pos2[1]}`;
+      
+      const domain1 = domainState.domains.get(key1);
+      const domain2 = domainState.domains.get(key2);
+
+      if (!domain1 || !domain2) continue;
+
+      // If one domain has a single value, constrain the other
+      if (domain1.possibleValues.size === 1 && !domain2.isLocked) {
+        const value1 = Array.from(domain1.possibleValues)[0];
+        const oldSize = domain2.possibleValues.size;
+
+        if (constraint.type === ConstraintType.SAME) {
+          // Only keep the same value
+          domain2.possibleValues = new Set([value1]);
+        } else if (constraint.type === ConstraintType.DIFFERENT) {
+          // Remove the same value
+          domain2.possibleValues.delete(value1);
+        }
+
+        if (domain2.possibleValues.size !== oldSize) {
+          changed = true;
+        }
+      }
+
+      // Apply constraint in reverse direction
+      if (domain2.possibleValues.size === 1 && !domain1.isLocked) {
+        const value2 = Array.from(domain2.possibleValues)[0];
+        const oldSize = domain1.possibleValues.size;
+
+        if (constraint.type === ConstraintType.SAME) {
+          // Only keep the same value
+          domain1.possibleValues = new Set([value2]);
+        } else if (constraint.type === ConstraintType.DIFFERENT) {
+          // Remove the same value
+          domain1.possibleValues.delete(value2);
+        }
+
+        if (domain1.possibleValues.size !== oldSize) {
+          changed = true;
+        }
+      }
+    }
+
+    return changed;
+  }
+
+  /**
+   * Propagate balance constraints in domain space
+   */
+  private propagateBalanceConstraintsDomain(domainState: DomainState): boolean {
+    let changed = false;
+
+    for (const balanceConstraint of domainState.constraints.balanceConstraints) {
+      if (balanceConstraint.type === 'row') {
+        changed = this.propagateRowBalanceDomain(domainState, balanceConstraint.index) || changed;
+      } else {
+        changed = this.propagateColumnBalanceDomain(domainState, balanceConstraint.index) || changed;
+      }
+    }
+
+    return changed;
+  }
+
+  /**
+   * Propagate row balance constraint in domain space
+   */
+  private propagateRowBalanceDomain(domainState: DomainState, row: number): boolean {
+    let changed = false;
+    let sunCount = 0;
+    let moonCount = 0;
+    const unassigned: string[] = [];
+
+    // Count assigned pieces and collect unassigned positions
+    for (let col = 0; col < this.size; col++) {
+      const key = `${row},${col}`;
+      const domain = domainState.domains.get(key);
+      
+      if (domain && domain.possibleValues.size === 1) {
+        const value = Array.from(domain.possibleValues)[0];
+        if (value === PieceType.SUN) sunCount++;
+        else if (value === PieceType.MOON) moonCount++;
+      } else if (domain && !domain.isLocked) {
+        unassigned.push(key);
+      }
+    }
+
+    // If we have 3 of one type, remaining must be the other type
+    if (sunCount === MAX_PIECES_PER_ROW_COL) {
+      for (const key of unassigned) {
+        const domain = domainState.domains.get(key);
+        if (domain && domain.possibleValues.has(PieceType.SUN)) {
+          domain.possibleValues.delete(PieceType.SUN);
+          changed = true;
+        }
+      }
+    }
+
+    if (moonCount === MAX_PIECES_PER_ROW_COL) {
+      for (const key of unassigned) {
+        const domain = domainState.domains.get(key);
+        if (domain && domain.possibleValues.has(PieceType.MOON)) {
+          domain.possibleValues.delete(PieceType.MOON);
+          changed = true;
+        }
+      }
+    }
+
+    return changed;
+  }
+
+  /**
+   * Propagate column balance constraint in domain space
+   */
+  private propagateColumnBalanceDomain(domainState: DomainState, col: number): boolean {
+    let changed = false;
+    let sunCount = 0;
+    let moonCount = 0;
+    const unassigned: string[] = [];
+
+    // Count assigned pieces and collect unassigned positions
+    for (let row = 0; row < this.size; row++) {
+      const key = `${row},${col}`;
+      const domain = domainState.domains.get(key);
+      
+      if (domain && domain.possibleValues.size === 1) {
+        const value = Array.from(domain.possibleValues)[0];
+        if (value === PieceType.SUN) sunCount++;
+        else if (value === PieceType.MOON) moonCount++;
+      } else if (domain && !domain.isLocked) {
+        unassigned.push(key);
+      }
+    }
+
+    // If we have 3 of one type, remaining must be the other type
+    if (sunCount === MAX_PIECES_PER_ROW_COL) {
+      for (const key of unassigned) {
+        const domain = domainState.domains.get(key);
+        if (domain && domain.possibleValues.has(PieceType.SUN)) {
+          domain.possibleValues.delete(PieceType.SUN);
+          changed = true;
+        }
+      }
+    }
+
+    if (moonCount === MAX_PIECES_PER_ROW_COL) {
+      for (const key of unassigned) {
+        const domain = domainState.domains.get(key);
+        if (domain && domain.possibleValues.has(PieceType.MOON)) {
+          domain.possibleValues.delete(PieceType.MOON);
+          changed = true;
+        }
+      }
+    }
+
+    return changed;
+  }
+
+  /**
+   * Propagate consecutive constraints in domain space
+   */
+  private propagateConsecutiveConstraintsDomain(domainState: DomainState): boolean {
+    let changed = false;
+
+    for (const consConstraint of domainState.constraints.consecutiveConstraints) {
+      changed = this.propagateConsecutiveSequenceDomain(domainState, consConstraint.positions) || changed;
+    }
+
+    return changed;
+  }
+
+  /**
+   * Propagate consecutive constraint for a specific sequence
+   */
+  private propagateConsecutiveSequenceDomain(domainState: DomainState, positions: Array<[number, number]>): boolean {
+    let changed = false;
+    
+    const domains = positions.map(pos => {
+      const key = `${pos[0]},${pos[1]}`;
+      return domainState.domains.get(key);
+    }).filter(d => d !== undefined) as VariableDomain[];
+
+    if (domains.length !== 3) return false;
+
+    // Check for XX_ pattern - if first two are same, third must be different
+    if (domains[0].possibleValues.size === 1 && domains[1].possibleValues.size === 1) {
+      const val0 = Array.from(domains[0].possibleValues)[0];
+      const val1 = Array.from(domains[1].possibleValues)[0];
+      
+      if (val0 === val1 && !domains[2].isLocked) {
+        if (domains[2].possibleValues.has(val0)) {
+          domains[2].possibleValues.delete(val0);
+          changed = true;
+        }
+      }
+    }
+
+    // Check for _XX pattern - if last two are same, first must be different
+    if (domains[1].possibleValues.size === 1 && domains[2].possibleValues.size === 1) {
+      const val1 = Array.from(domains[1].possibleValues)[0];
+      const val2 = Array.from(domains[2].possibleValues)[0];
+      
+      if (val1 === val2 && !domains[0].isLocked) {
+        if (domains[0].possibleValues.has(val1)) {
+          domains[0].possibleValues.delete(val1);
+          changed = true;
+        }
+      }
+    }
+
+    // Check for X_X pattern - if first and third are same, middle must be different
+    if (domains[0].possibleValues.size === 1 && domains[2].possibleValues.size === 1) {
+      const val0 = Array.from(domains[0].possibleValues)[0];
+      const val2 = Array.from(domains[2].possibleValues)[0];
+      
+      if (val0 === val2 && !domains[1].isLocked) {
+        if (domains[1].possibleValues.has(val0)) {
+          domains[1].possibleValues.delete(val0);
+          changed = true;
+        }
+      }
+    }
+
+    return changed;
+  }
+
+  /**
+   * Find all valid solutions using domain-based constraint propagation + backtracking
+   * Falls back to original method if domain-based approach fails
    */
   findAllSolutions(maxSolutions: number = 10): PieceType[][][] {
+    // Try domain-based approach first
+    if (this.useDomainBasedSolving) {
+      try {
+        const domainSolutions = this.findAllSolutionsDomain(maxSolutions);
+        
+        // Validate that domain solutions work with original validation
+        const validatedSolutions = domainSolutions.filter(solution => 
+          this.isCompleteAndValid(solution)
+        );
+        
+        if (validatedSolutions.length > 0) {
+          console.log(`Domain-based solver found ${validatedSolutions.length} solutions`);
+          return validatedSolutions;
+        }
+      } catch (error) {
+        console.warn('Domain-based solving failed, falling back to original method:', error);
+      }
+    }
+
+    // Fallback to original method
+    console.log('Using original board-based solver');
+    return this.findAllSolutionsOriginal(maxSolutions);
+  }
+
+  /**
+   * Domain-based solution finding with optional CDCL
+   */
+  private findAllSolutionsDomain(maxSolutions: number = 10): PieceType[][][] {
+    const solutions: PieceType[][][] = [];
+    const domainState = this.createDomainState();
+
+    // Apply initial constraint propagation
+    if (!this.propagateConstraintsDomain(domainState)) {
+      return solutions; // No valid solution possible
+    }
+
+    if (this.useCDCL) {
+      // Use CDCL-based search
+      return this.findSolutionsWithCDCL(domainState, maxSolutions);
+    } else {
+      // Use traditional backtracking
+      return this.findSolutionsWithBacktracking(domainState, maxSolutions);
+    }
+  }
+
+  /**
+   * CDCL-based solution finding
+   */
+  private findSolutionsWithCDCL(domainState: DomainState, maxSolutions: number): PieceType[][][] {
+    const solutions: PieceType[][][] = [];
+
+    // CDCL-based search
+    while (solutions.length < maxSolutions) {
+      // Check if we have a complete solution
+      if (this.isBoardCompleteFromDomain(domainState)) {
+        const board = this.domainStateToBoard(domainState);
+        solutions.push(board);
+        
+        // Backtrack to find more solutions
+        if (!this.backtrackForNextSolution(domainState)) {
+          break; // No more solutions
+        }
+        continue;
+      }
+
+      // Find next variable to assign using heuristics (VSIDS or fallback)
+      const nextVar = this.selectVariableWithHeuristic(domainState);
+      if (!nextVar) {
+        // No more variables to assign, backtrack
+        if (!this.backtrackForNextSolution(domainState)) {
+          break;
+        }
+        continue;
+      }
+
+      // Try to make a decision
+      const domain = domainState.domains.get(nextVar);
+      if (!domain || domain.possibleValues.size === 0) {
+        // No possible values - conflict
+        if (!this.handleConflict(domainState, [nextVar])) {
+          break; // Cannot resolve conflict
+        }
+        continue;
+      }
+
+      // Make decision (try first available value)
+      const possibleValues = Array.from(domain.possibleValues);
+      const selectedValue = possibleValues[0];
+      
+      this.makeDecision(domainState, nextVar, selectedValue);
+
+      // Propagate constraints
+      if (!this.propagateConstraintsDomain(domainState)) {
+        // Conflict detected during propagation
+        const conflictVars = this.detectConflictVariables(domainState);
+        if (!this.handleConflict(domainState, conflictVars)) {
+          break; // Cannot resolve conflict
+        }
+      }
+    }
+
+    return solutions;
+  }
+
+  /**
+   * Select next variable to assign using heuristics
+   */
+  private selectVariable(domainState: DomainState): string | null {
+    let bestVar: string | null = null;
+    let smallestDomain = Infinity;
+
+    // Use "Most Constrained Variable" heuristic (smallest domain first)
+    for (const [varKey, domain] of domainState.domains) {
+      if (!domain.isLocked && domain.possibleValues.size > 1 && domain.possibleValues.size < smallestDomain) {
+        smallestDomain = domain.possibleValues.size;
+        bestVar = varKey;
+      }
+    }
+
+    return bestVar;
+  }
+
+  /**
+   * Detect variables involved in the current conflict
+   */
+  private detectConflictVariables(domainState: DomainState): string[] {
+    const conflictVars: string[] = [];
+
+    // Find variables with empty domains (direct conflicts)
+    for (const [varKey, domain] of domainState.domains) {
+      if (!domain.isLocked && domain.possibleValues.size === 0) {
+        conflictVars.push(varKey);
+      }
+    }
+
+    // Check for constraint violations in recently assigned variables
+    const recentAssignments = domainState.assignments.slice(-5); // Check last 5 assignments
+    for (const assignment of recentAssignments) {
+      if (this.isVariableInConflict(domainState, assignment.variable)) {
+        conflictVars.push(assignment.variable);
+      }
+    }
+
+    return conflictVars;
+  }
+
+  /**
+   * Check if a variable is involved in any constraint conflict
+   */
+  private isVariableInConflict(domainState: DomainState, varKey: string): boolean {
+    const domain = domainState.domains.get(varKey);
+    if (!domain || domain.possibleValues.size !== 1) {
+      return false;
+    }
+
+    const [row, col] = domain.position;
+    const value = Array.from(domain.possibleValues)[0];
+
+    // Check direct constraints
+    for (const constraint of domainState.constraints.directConstraints) {
+      if (this.positionsEqual(constraint.pos1, [row, col]) || this.positionsEqual(constraint.pos2, [row, col])) {
+        const otherPos = this.positionsEqual(constraint.pos1, [row, col]) ? constraint.pos2 : constraint.pos1;
+        const otherKey = `${otherPos[0]},${otherPos[1]}`;
+        const otherDomain = domainState.domains.get(otherKey);
+        
+        if (otherDomain && otherDomain.possibleValues.size === 1) {
+          const otherValue = Array.from(otherDomain.possibleValues)[0];
+          
+          if (constraint.type === ConstraintType.SAME && value !== otherValue) {
+            return true;
+          }
+          if (constraint.type === ConstraintType.DIFFERENT && value === otherValue) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Handle conflict using CDCL with VSIDS integration
+   */
+  private handleConflict(domainState: DomainState, conflictVars: string[]): boolean {
+    if (conflictVars.length === 0) {
+      return false;
+    }
+
+    // VSIDS: Bump activity of variables involved in conflict
+    this.bumpVariableActivity(domainState, conflictVars);
+    
+    // VSIDS: Decay all variable activities
+    this.decayVariableActivities();
+
+    // Analyze conflict and learn clause
+    const analysis = this.analyzeConflict(domainState, conflictVars);
+    
+    // Learn the conflict clause
+    this.learnClause(domainState, analysis.conflictClause);
+    
+    // Backtrack to appropriate level
+    if (analysis.backtrackLevel < 0) {
+      return false; // No solution exists
+    }
+    
+    this.backtrack(domainState, analysis.backtrackLevel);
+    return true;
+  }
+
+  /**
+   * Backtrack to find the next solution
+   */
+  private backtrackForNextSolution(domainState: DomainState): boolean {
+    // Find the most recent decision
+    let lastDecisionIndex = -1;
+    for (let i = domainState.assignments.length - 1; i >= 0; i--) {
+      if (domainState.assignments[i].isDecision) {
+        lastDecisionIndex = i;
+        break;
+      }
+    }
+
+    if (lastDecisionIndex === -1) {
+      return false; // No decisions to backtrack
+    }
+
+    const lastDecision = domainState.assignments[lastDecisionIndex];
+    const domain = domainState.domains.get(lastDecision.variable);
+    
+    if (!domain) {
+      return false;
+    }
+
+    // Backtrack to before this decision
+    this.backtrack(domainState, lastDecision.decisionLevel - 1);
+    
+    // Try next value for this variable
+    const remainingValues = Array.from(domain.possibleValues).filter(v => v !== lastDecision.value);
+    
+    if (remainingValues.length > 0) {
+      // Try next value
+      this.makeDecision(domainState, lastDecision.variable, remainingValues[0]);
+      return true;
+    } else {
+      // No more values, continue backtracking
+      return this.backtrackForNextSolution(domainState);
+    }
+  }
+
+  /**
+   * Traditional backtracking-based solution finding (fallback when CDCL is disabled)
+   */
+  private findSolutionsWithBacktracking(domainState: DomainState, maxSolutions: number): PieceType[][][] {
+    const solutions: PieceType[][][] = [];
+
+    // Find unassigned variables
+    const unassignedVars = this.getUnassignedVariablesDomain(domainState);
+    
+    // Use traditional backtracking
+    const backtrack = (varIndex: number): void => {
+      if (solutions.length >= maxSolutions) {
+        return;
+      }
+
+      if (varIndex === unassignedVars.length) {
+        // All variables assigned - check if solution is complete
+        const board = this.domainStateToBoard(domainState);
+        if (this.isBoardCompleteFromDomain(domainState)) {
+          solutions.push(board);
+        }
+        return;
+      }
+
+      const varKey = unassignedVars[varIndex];
+      const domain = domainState.domains.get(varKey);
+      
+      if (!domain || domain.isLocked) {
+        backtrack(varIndex + 1);
+        return;
+      }
+
+      // Try each possible value in domain
+      const possibleValues = Array.from(domain.possibleValues);
+      
+      for (const value of possibleValues) {
+        // Create backup of domain state
+        const domainBackup = this.backupDomainState(domainState);
+        
+        // Assign value
+        domain.possibleValues = new Set([value]);
+        
+        // Propagate constraints
+        if (this.propagateConstraintsDomain(domainState)) {
+          backtrack(varIndex + 1);
+        }
+        
+        // Restore domain state
+        this.restoreDomainState(domainState, domainBackup);
+      }
+    };
+
+    backtrack(0);
+    return solutions;
+  }
+
+  /**
+   * Get unassigned variables from domain state
+   */
+  private getUnassignedVariablesDomain(domainState: DomainState): string[] {
+    const unassigned: string[] = [];
+    
+    for (const [key, domain] of domainState.domains) {
+      if (!domain.isLocked && domain.possibleValues.size > 1) {
+        unassigned.push(key);
+      }
+    }
+    
+    // Sort by domain size (smallest first) for better performance
+    unassigned.sort((a, b) => {
+      const domainA = domainState.domains.get(a);
+      const domainB = domainState.domains.get(b);
+      
+      if (!domainA || !domainB) return 0;
+      return domainA.possibleValues.size - domainB.possibleValues.size;
+    });
+    
+    return unassigned;
+  }
+
+  /**
+   * Check if board is complete from domain state
+   */
+  private isBoardCompleteFromDomain(domainState: DomainState): boolean {
+    for (const [key, domain] of domainState.domains) {
+      if (!domain.isLocked && domain.possibleValues.size !== 1) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Create backup of domain state for backtracking
+   */
+  private backupDomainState(domainState: DomainState): Map<string, Set<PieceType>> {
+    const backup = new Map<string, Set<PieceType>>();
+    
+    for (const [key, domain] of domainState.domains) {
+      backup.set(key, new Set(domain.possibleValues));
+    }
+    
+    return backup;
+  }
+
+  /**
+   * Restore domain state from backup
+   */
+  private restoreDomainState(domainState: DomainState, backup: Map<string, Set<PieceType>>): void {
+    for (const [key, possibleValues] of backup) {
+      const domain = domainState.domains.get(key);
+      if (domain) {
+        domain.possibleValues = new Set(possibleValues);
+      }
+    }
+  }
+
+  /**
+   * Original board-based solution finding (fallback)
+   */
+  private findAllSolutionsOriginal(maxSolutions: number = 10): PieceType[][][] {
     const solutions: PieceType[][][] = [];
 
     // Create initial board with only locked pieces
@@ -109,6 +1327,49 @@ export class TangoBoardSolver {
 
     backtrack(0);
     return solutions;
+  }
+
+  /**
+   * Enable or disable domain-based solving (for testing/debugging)
+   */
+  setUseDomainBasedSolving(enabled: boolean): void {
+    this.useDomainBasedSolving = enabled;
+  }
+
+  /**
+   * Enable or disable CDCL (Conflict-Driven Clause Learning)
+   */
+  setUseCDCL(enabled: boolean): void {
+    this.useCDCL = enabled;
+  }
+
+  /**
+   * Enable or disable VSIDS (Variable State Independent Decaying Sum)
+   */
+  setUseVSIDS(enabled: boolean): void {
+    this.useVSIDS = enabled;
+    if (enabled && this.vsidsState) {
+      // Reset VSIDS state when enabling
+      this.vsidsState = this.initializeVSIDS();
+    }
+  }
+
+  /**
+   * Get current solving method being used (VSIDS is the optimal default method)
+   */
+  getSolvingMethod(): string {
+    if (!this.useDomainBasedSolving) {
+      return 'board-based (legacy fallback)';
+    }
+    
+    let method = 'domain-based';
+    if (this.useCDCL) {
+      method += ' + CDCL';
+    }
+    if (this.useVSIDS) {
+      method += ' + VSIDS (optimal)';
+    }
+    return method;
   }
 
   /**
@@ -613,6 +1874,14 @@ export class TangoBoardSolver {
     // Pattern 2: Different constraint patterns
     madeChanges = this.applyDifferentConstraintPattern(board) || madeChanges;
 
+    // Pattern 3: Advanced balance rule with two x constraints
+    // A _x_ _x_ _ always yields A _x_ _x_ B (position agnostic)
+    madeChanges = this.applyTwoXConstraintPattern(board) || madeChanges;
+
+    // Pattern 4: Triple equals constraint pattern
+    // A _=_ _=_ _ is always solvable as A B B A A B
+    madeChanges = this.applyTripleEqualsPattern(board) || madeChanges;
+
     return madeChanges;
   }
 
@@ -726,6 +1995,322 @@ export class TangoBoardSolver {
     // Apply complex mixed constraint patterns
     madeChanges = this.applyMixedConstraintSequences(board) || madeChanges;
 
+    return madeChanges;
+  }
+
+  /**
+   * Apply advanced balance rule with two x constraints
+   * Pattern: A _x_ _x_ _ always yields A _x_ _x_ B (position agnostic)
+   * All permutations are true for the location of A and B, as long as there are 
+   * two pairs of empty tiles with an 'x' constraint between them
+   */
+  private applyTwoXConstraintPattern(board: PieceType[][]): boolean {
+    let madeChanges = false;
+
+    // Check horizontal patterns
+    madeChanges = this.applyHorizontalTwoXPattern(board) || madeChanges;
+    
+    // Check vertical patterns
+    madeChanges = this.applyVerticalTwoXPattern(board) || madeChanges;
+
+    return madeChanges;
+  }
+
+  /**
+   * Apply horizontal two x constraint pattern
+   * Pattern: A _x_ _x_ _ where A is known and the rest are empty
+   */
+  private applyHorizontalTwoXPattern(board: PieceType[][], row?: number): boolean {
+    let madeChanges = false;
+    const rowsToCheck = row !== undefined ? [row] : Array.from({ length: this.size }, (_, i) => i);
+
+    for (const r of rowsToCheck) {
+      // Look for pattern: A _x_ _x_ _ (5 positions needed)
+      for (let col = 0; col <= this.size - 5; col++) {
+        if (this.checkHorizontalTwoXPattern(board, r, col)) {
+          madeChanges = this.applyHorizontalTwoXPatternSolution(board, r, col) || madeChanges;
+        }
+      }
+    }
+
+    return madeChanges;
+  }
+
+  /**
+   * Check if horizontal two x pattern exists at position
+   */
+  private checkHorizontalTwoXPattern(board: PieceType[][], row: number, col: number): boolean {
+    // Pattern: [A] [_] [x] [_] [x] [_]
+    //          0   1   2   3   4   5
+    
+    // Check if position 0 has a known piece
+    if (board[row][col] === PieceType.EMPTY) return false;
+    
+    // Check for x constraints at positions 2 and 4
+    if (col + 2 >= this.size || this.hConstraints[row][col + 2] !== ConstraintType.DIFFERENT) return false;
+    if (col + 4 >= this.size || this.hConstraints[row][col + 4] !== ConstraintType.DIFFERENT) return false;
+    
+    // Check that positions 1, 3, 5 are empty
+    const emptyPositions = [1, 3, 5];
+    for (const pos of emptyPositions) {
+      if (col + pos >= this.size || board[row][col + pos] !== PieceType.EMPTY) return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Apply solution for horizontal two x pattern: A _x_ _x_ _ → A B x A x B
+   */
+  private applyHorizontalTwoXPatternSolution(board: PieceType[][], row: number, col: number): boolean {
+    const knownPiece = board[row][col]; // A
+    const oppositePiece = knownPiece === PieceType.SUN ? PieceType.MOON : PieceType.SUN; // B
+    
+    let madeChanges = false;
+    
+    // Fill pattern: A B x A x B
+    const positions = [
+      { pos: 1, piece: oppositePiece }, // Position 1 gets B
+      { pos: 3, piece: knownPiece },    // Position 3 gets A  
+      { pos: 5, piece: oppositePiece }  // Position 5 gets B
+    ];
+    
+    for (const { pos, piece } of positions) {
+      if (col + pos < this.size && board[row][col + pos] === PieceType.EMPTY) {
+        if (this.canPlacePiece(board, row, col + pos, piece)) {
+          board[row][col + pos] = piece;
+          madeChanges = true;
+        }
+      }
+    }
+    
+    return madeChanges;
+  }
+
+  /**
+   * Apply vertical two x constraint pattern
+   */
+  private applyVerticalTwoXPattern(board: PieceType[][], col?: number): boolean {
+    let madeChanges = false;
+    const colsToCheck = col !== undefined ? [col] : Array.from({ length: this.size }, (_, i) => i);
+
+    for (const c of colsToCheck) {
+      // Look for pattern: A _x_ _x_ _ (5 positions needed)
+      for (let row = 0; row <= this.size - 5; row++) {
+        if (this.checkVerticalTwoXPattern(board, row, c)) {
+          madeChanges = this.applyVerticalTwoXPatternSolution(board, row, c) || madeChanges;
+        }
+      }
+    }
+
+    return madeChanges;
+  }
+
+  /**
+   * Check if vertical two x pattern exists at position
+   */
+  private checkVerticalTwoXPattern(board: PieceType[][], row: number, col: number): boolean {
+    // Pattern: [A] [_] [x] [_] [x] [_] (vertical)
+    //          0   1   2   3   4   5
+    
+    // Check if position 0 has a known piece
+    if (board[row][col] === PieceType.EMPTY) return false;
+    
+    // Check for x constraints at positions 2 and 4
+    if (row + 2 >= this.size || this.vConstraints[row + 2][col] !== ConstraintType.DIFFERENT) return false;
+    if (row + 4 >= this.size || this.vConstraints[row + 4][col] !== ConstraintType.DIFFERENT) return false;
+    
+    // Check that positions 1, 3, 5 are empty
+    const emptyPositions = [1, 3, 5];
+    for (const pos of emptyPositions) {
+      if (row + pos >= this.size || board[row + pos][col] !== PieceType.EMPTY) return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Apply solution for vertical two x pattern: A _x_ _x_ _ → A B x A x B
+   */
+  private applyVerticalTwoXPatternSolution(board: PieceType[][], row: number, col: number): boolean {
+    const knownPiece = board[row][col]; // A
+    const oppositePiece = knownPiece === PieceType.SUN ? PieceType.MOON : PieceType.SUN; // B
+    
+    let madeChanges = false;
+    
+    // Fill pattern: A B x A x B
+    const positions = [
+      { pos: 1, piece: oppositePiece }, // Position 1 gets B
+      { pos: 3, piece: knownPiece },    // Position 3 gets A  
+      { pos: 5, piece: oppositePiece }  // Position 5 gets B
+    ];
+    
+    for (const { pos, piece } of positions) {
+      if (row + pos < this.size && board[row + pos][col] === PieceType.EMPTY) {
+        if (this.canPlacePiece(board, row + pos, col, piece)) {
+          board[row + pos][col] = piece;
+          madeChanges = true;
+        }
+      }
+    }
+    
+    return madeChanges;
+  }
+
+  /**
+   * Apply triple equals constraint pattern
+   * Pattern: A _=_ _=_ _ is always solvable as A B B A A B
+   */
+  private applyTripleEqualsPattern(board: PieceType[][]): boolean {
+    let madeChanges = false;
+
+    // Check horizontal patterns
+    madeChanges = this.applyHorizontalTripleEqualsPattern(board) || madeChanges;
+    
+    // Check vertical patterns  
+    madeChanges = this.applyVerticalTripleEqualsPattern(board) || madeChanges;
+
+    return madeChanges;
+  }
+
+  /**
+   * Apply horizontal triple equals pattern
+   * Pattern: A _=_ _=_ _ where A is known and the rest are empty
+   */
+  private applyHorizontalTripleEqualsPattern(board: PieceType[][], row?: number): boolean {
+    let madeChanges = false;
+    const rowsToCheck = row !== undefined ? [row] : Array.from({ length: this.size }, (_, i) => i);
+
+    for (const r of rowsToCheck) {
+      // Look for pattern: A _=_ _=_ _ (6 positions needed)
+      for (let col = 0; col <= this.size - 6; col++) {
+        if (this.checkHorizontalTripleEqualsPattern(board, r, col)) {
+          madeChanges = this.applyHorizontalTripleEqualsPatternSolution(board, r, col) || madeChanges;
+        }
+      }
+    }
+
+    return madeChanges;
+  }
+
+  /**
+   * Check if horizontal triple equals pattern exists at position
+   */
+  private checkHorizontalTripleEqualsPattern(board: PieceType[][], row: number, col: number): boolean {
+    // Pattern: [A] [_] [=] [_] [=] [_]
+    //          0   1   2   3   4   5
+    
+    // Check if position 0 has a known piece
+    if (board[row][col] === PieceType.EMPTY) return false;
+    
+    // Check for = constraints at positions 2 and 4
+    if (col + 2 >= this.size || this.hConstraints[row][col + 2] !== ConstraintType.SAME) return false;
+    if (col + 4 >= this.size || this.hConstraints[row][col + 4] !== ConstraintType.SAME) return false;
+    
+    // Check that positions 1, 3, 5 are empty
+    const emptyPositions = [1, 3, 5];
+    for (const pos of emptyPositions) {
+      if (col + pos >= this.size || board[row][col + pos] !== PieceType.EMPTY) return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Apply solution for horizontal triple equals pattern: A _=_ _=_ _ → A B B A A B
+   */
+  private applyHorizontalTripleEqualsPatternSolution(board: PieceType[][], row: number, col: number): boolean {
+    const knownPiece = board[row][col]; // A
+    const oppositePiece = knownPiece === PieceType.SUN ? PieceType.MOON : PieceType.SUN; // B
+    
+    let madeChanges = false;
+    
+    // Fill pattern: A B = B = A (which gives us A B B A A B when expanded)
+    const positions = [
+      { pos: 1, piece: oppositePiece }, // Position 1 gets B
+      { pos: 3, piece: oppositePiece }, // Position 3 gets B (same as pos 1 due to =)
+      { pos: 5, piece: knownPiece }     // Position 5 gets A (same as pos 3 due to =)
+    ];
+    
+    for (const { pos, piece } of positions) {
+      if (col + pos < this.size && board[row][col + pos] === PieceType.EMPTY) {
+        if (this.canPlacePiece(board, row, col + pos, piece)) {
+          board[row][col + pos] = piece;
+          madeChanges = true;
+        }
+      }
+    }
+    
+    return madeChanges;
+  }
+
+  /**
+   * Apply vertical triple equals pattern
+   */
+  private applyVerticalTripleEqualsPattern(board: PieceType[][], col?: number): boolean {
+    let madeChanges = false;
+    const colsToCheck = col !== undefined ? [col] : Array.from({ length: this.size }, (_, i) => i);
+
+    for (const c of colsToCheck) {
+      // Look for pattern: A _=_ _=_ _ (6 positions needed)
+      for (let row = 0; row <= this.size - 6; row++) {
+        if (this.checkVerticalTripleEqualsPattern(board, row, c)) {
+          madeChanges = this.applyVerticalTripleEqualsPatternSolution(board, row, c) || madeChanges;
+        }
+      }
+    }
+
+    return madeChanges;
+  }
+
+  /**
+   * Check if vertical triple equals pattern exists at position
+   */
+  private checkVerticalTripleEqualsPattern(board: PieceType[][], row: number, col: number): boolean {
+    // Pattern: [A] [_] [=] [_] [=] [_] (vertical)
+    //          0   1   2   3   4   5
+    
+    // Check if position 0 has a known piece
+    if (board[row][col] === PieceType.EMPTY) return false;
+    
+    // Check for = constraints at positions 2 and 4
+    if (row + 2 >= this.size || this.vConstraints[row + 2][col] !== ConstraintType.SAME) return false;
+    if (row + 4 >= this.size || this.vConstraints[row + 4][col] !== ConstraintType.SAME) return false;
+    
+    // Check that positions 1, 3, 5 are empty
+    const emptyPositions = [1, 3, 5];
+    for (const pos of emptyPositions) {
+      if (row + pos >= this.size || board[row + pos][col] !== PieceType.EMPTY) return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Apply solution for vertical triple equals pattern: A _=_ _=_ _ → A B B A A B
+   */
+  private applyVerticalTripleEqualsPatternSolution(board: PieceType[][], row: number, col: number): boolean {
+    const knownPiece = board[row][col]; // A
+    const oppositePiece = knownPiece === PieceType.SUN ? PieceType.MOON : PieceType.SUN; // B
+    
+    let madeChanges = false;
+    
+    // Fill pattern: A B = B = A (which gives us A B B A A B when expanded)
+    const positions = [
+      { pos: 1, piece: oppositePiece }, // Position 1 gets B
+      { pos: 3, piece: oppositePiece }, // Position 3 gets B (same as pos 1 due to =)
+      { pos: 5, piece: knownPiece }     // Position 5 gets A (same as pos 3 due to =)
+    ];
+    
+    for (const { pos, piece } of positions) {
+      if (row + pos < this.size && board[row + pos][col] === PieceType.EMPTY) {
+        if (this.canPlacePiece(board, row + pos, col, piece)) {
+          board[row + pos][col] = piece;
+          madeChanges = true;
+        }
+      }
+    }
+    
     return madeChanges;
   }
 

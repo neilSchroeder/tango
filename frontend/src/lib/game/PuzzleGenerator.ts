@@ -1,4 +1,4 @@
-import type { PuzzleConfig } from './types';
+import type { PuzzleConfig, GeneratedPuzzle } from './types';
 import { TangoBoardSolver } from './TangoBoardSolver';
 import { 
   BOARD_SIZE, 
@@ -10,13 +10,6 @@ import {
   createEmptyVConstraints,
   createEmptyLockedTiles
 } from './types';
-
-export interface GeneratedPuzzle {
-  board: PieceType[][];
-  hConstraints: ConstraintType[][];
-  vConstraints: ConstraintType[][];
-  lockedTiles: boolean[][];
-}
 
 /**
  * Tango / Binairo-like puzzle generator with SAME (=) and DIFFERENT (×) connectors.
@@ -30,6 +23,7 @@ export class PuzzleGenerator {
   private readonly size = BOARD_SIZE;
 
   /*
+  * DEFAULT: Original puzzle generation logic
   * Puzzle generation logic goes like this:
   * Generate a random valid board
   * Work backwards from the solution to create the puzzle
@@ -37,6 +31,9 @@ export class PuzzleGenerator {
   * Apply constraints and remove pieces to create the final puzzle
   */
 
+  /**
+   * Generate puzzle using original method (DEFAULT)
+   */
   public generatePuzzle(config: PuzzleConfig): GeneratedPuzzle {
     let attempts = 0;
     const maxAttempts = config.maxAttempts || 50;
@@ -1502,8 +1499,12 @@ export class PuzzleGenerator {
         return false;
       }
       
-      // Then verify uniqueness using the full solver
+      // Then verify uniqueness using the full solver with optimal configuration
       const solver = new TangoBoardSolver(board, hConstraints, vConstraints, lockedTiles);
+      // Ensure VSIDS is enabled for optimal performance
+      solver.setUseDomainBasedSolving(true);
+      solver.setUseCDCL(true);
+      solver.setUseVSIDS(true);
       const solutions = solver.findAllSolutions(3); // Check for up to 3 solutions
       
       // Must have exactly one solution that matches our expected solution
@@ -1637,8 +1638,12 @@ export class PuzzleGenerator {
     lockedTiles: boolean[][]
   ): boolean {
     try {
-      // Create a solver to test if the puzzle has any solutions
+      // Create a solver to test if the puzzle has any solutions with optimal configuration
       const solver = new TangoBoardSolver(board, hConstraints, vConstraints, lockedTiles);
+      // Ensure VSIDS is enabled for optimal performance
+      solver.setUseDomainBasedSolving(true);
+      solver.setUseCDCL(true);
+      solver.setUseVSIDS(true);
       
       // Check if puzzle has at least one solution
       const solutions = solver.findAllSolutions(1);

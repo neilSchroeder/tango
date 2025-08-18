@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { PieceType, ConstraintType } from '../api/types';
   import { gameStore } from '../stores/gameStore.svelte';
-  import { getPieceSymbol, getConstraintSymbol, getNextPiece } from '../utils/gameUtils';
+  import { getConstraintSymbol, getNextPiece } from '../utils/gameUtils';
+  import { SunIcon, MoonIcon } from '../assets';
 
   interface Props {
     row: number;
@@ -64,6 +65,31 @@
     
     return classes.join(' ');
   });
+
+  // Compute icon size based on screen size (responsive) - proportional to tile size
+  const iconSize = $derived((() => {
+    if (typeof window === 'undefined') return 40; // SSR fallback
+    
+    const width = window.innerWidth;
+    if (width <= 640) return 36; // Mobile - proportional to 4rem tile (64px)
+    if (width <= 1024) return 38; // Tablet - proportional to 4.5rem tile (72px)  
+    return 42; // Desktop - proportional to 5rem tile (80px)
+  })());
+
+  // Compute icon colors with theme-aware defaults
+  const sunColor = $derived((() => {
+    if (isGameComplete) return '#22C55E'; // Green for completed
+    if (hasError || hasConstraintViolation) return '#EF4444'; // Red for errors
+    if (isHinted) return '#F59E0B'; // Bright amber for hints
+    return '#F59E0B'; // Default amber/orange
+  })());
+
+  const moonColor = $derived((() => {
+    if (isGameComplete) return '#22C55E'; // Green for completed
+    if (hasError || hasConstraintViolation) return '#EF4444'; // Red for errors
+    if (isHinted) return '#8B5CF6'; // Bright purple for hints
+    return '#6366F1'; // Default indigo/purple
+  })());
 </script>
 
 <div class="relative">
@@ -73,8 +99,22 @@
     disabled={isLocked || isGameComplete || gameStore.state.isMakingMove}
     aria-label="Game tile at row {row + 1}, column {col + 1}: {piece}"
   >
-    <span class="game-piece">
-      {getPieceSymbol(piece)}
+    <span class="game-piece flex items-center justify-center">
+      {#if piece === 'sun'}
+        <SunIcon 
+          size={iconSize} 
+          color={sunColor} 
+          class="transition-all duration-200 {isHinted ? 'animate-pulse' : ''}" 
+        />
+      {:else if piece === 'moon'}
+        <MoonIcon 
+          size={iconSize} 
+          color={moonColor} 
+          class="transition-all duration-200 {isHinted ? 'animate-pulse' : ''}" 
+        />
+      {:else}
+        <!-- Empty tile - no visual placeholder -->
+      {/if}
     </span>
   </button>
 

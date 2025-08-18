@@ -4,7 +4,12 @@
   import GameControls from '$lib/components/GameControls.svelte';
   import Leaderboard from '$lib/components/Leaderboard.svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+  import ConfettiAnimation from '$lib/components/ConfettiAnimation.svelte';
+  import WinCelebration from '$lib/components/WinCelebration.svelte';
   import { gameStore } from '$lib/stores/gameStore.svelte';
+
+  // Access state reactively using Svelte 5 runes
+  const state = $derived(gameStore.state);
 
   // Load leaderboard on mount
   onMount(() => {
@@ -15,6 +20,14 @@
   onDestroy(() => {
     gameStore.destroy();
   });
+
+  function handleCloseCelebration() {
+    gameStore.closeWinCelebration();
+  }
+
+  function handleNewGameFromCelebration() {
+    gameStore.startNewGameFromCelebration();
+  }
 </script>
 
 <svelte:head>
@@ -72,4 +85,21 @@
       </p>
     </footer>
   </div>
+  
+  <!-- Win celebration components -->
+  {#if state.showWinCelebration}
+    <ConfettiAnimation />
+  {/if}
+  
+  {#if state.currentGame && state.showWinCelebration}
+    <WinCelebration 
+      game={state.currentGame}
+      difficulty={state.difficulty}
+      completionTime={state.completionTime}
+      leaderboardPosition={state.leaderboardPosition}
+      isVisible={state.showWinCelebration}
+      onclose={handleCloseCelebration}
+      onnewgame={handleNewGameFromCelebration}
+    />
+  {/if}
 </main>

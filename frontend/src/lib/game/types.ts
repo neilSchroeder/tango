@@ -15,6 +15,13 @@ export enum ConstraintType {
   DIFFERENT = 'different'
 }
 
+export interface GeneratedPuzzle {
+  board: PieceType[][];
+  hConstraints: ConstraintType[][];
+  vConstraints: ConstraintType[][];
+  lockedTiles: boolean[][];
+}
+
 export interface GameState {
   gameId?: string;
   board: PieceType[][];
@@ -170,18 +177,6 @@ export function createEmptyLockedTiles(): boolean[][] {
 export const PUZZLE_CONFIGS: { [key: string]: PuzzleConfig } = {
   easy: {
     name: 'Easy',
-    startingPiecesMin: 8,
-    startingPiecesMax: 12,
-    constraintProbability: 0.3,
-    maxAttempts: 10,
-    baseScore: 100,
-    parTime: 300, // 5 minutes
-    parMoves: 30,
-    timeWeight: 2,
-    moveWeight: 3
-  },
-  medium: {
-    name: 'Medium',
     startingPiecesMin: 6,
     startingPiecesMax: 10,
     constraintProbability: 0.25,
@@ -192,8 +187,8 @@ export const PUZZLE_CONFIGS: { [key: string]: PuzzleConfig } = {
     timeWeight: 3,
     moveWeight: 4
   },
-  hard: {
-    name: 'Hard',
+  medium: {
+    name: 'Medium',
     startingPiecesMin: 4,
     startingPiecesMax: 8,
     constraintProbability: 0.35,
@@ -204,8 +199,8 @@ export const PUZZLE_CONFIGS: { [key: string]: PuzzleConfig } = {
     timeWeight: 4,
     moveWeight: 5
   },
-  standard: {
-    name: 'Standard',
+  hard: {
+    name: 'Hard',
     startingPiecesMin: 6,
     startingPiecesMax: 10,
     constraintProbability: 0.25,
@@ -216,8 +211,8 @@ export const PUZZLE_CONFIGS: { [key: string]: PuzzleConfig } = {
     timeWeight: 3,
     moveWeight: 4
   },
-  challenging: {
-    name: 'Challenging',
+  expert: {
+    name: 'Expert',
     startingPiecesMin: 4,
     startingPiecesMax: 8,
     constraintProbability: 0.2,
@@ -228,8 +223,8 @@ export const PUZZLE_CONFIGS: { [key: string]: PuzzleConfig } = {
     timeWeight: 4,
     moveWeight: 5
   },
-  expert: {
-    name: 'Expert',
+  genius: {
+    name: 'Genius',
     startingPiecesMin: 2,
     startingPiecesMax: 6,
     constraintProbability: 0.15,

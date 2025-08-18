@@ -87,6 +87,11 @@ interface GameStore {
   
   // Game difficulty
   difficulty: string;
+  
+  // Win celebration
+  showWinCelebration: boolean;
+  completionTime: string;
+  leaderboardPosition: number | null;
 }
 
 function createGameStore() {
@@ -107,7 +112,10 @@ function createGameStore() {
     elapsedTime: 0,
     moveHistory: [],
     initialGameState: null,
-    difficulty: 'medium'
+    difficulty: 'medium',
+    showWinCelebration: false,
+    completionTime: '',
+    leaderboardPosition: null
   });
 
   // Timer interval reference
@@ -271,10 +279,16 @@ function createGameStore() {
         const existingLeaderboard = JSON.parse(localStorage.getItem('tango-leaderboard') || '[]');
         existingLeaderboard.push(entry);
         existingLeaderboard.sort((a: LeaderboardEntry, b: LeaderboardEntry) => a.time - b.time);
-        localStorage.setItem('tango-leaderboard', JSON.stringify(existingLeaderboard.slice(0, 10)));
+        const updatedLeaderboard = existingLeaderboard.slice(0, 10);
+        localStorage.setItem('tango-leaderboard', JSON.stringify(updatedLeaderboard));
         
         // Reload leaderboard
         await loadLeaderboard();
+        
+        // Set up win celebration
+        state.completionTime = state.elapsedTime.toString();
+        state.leaderboardPosition = updatedLeaderboard.findIndex((lb: LeaderboardEntry) => lb.time === entry.time && lb.date === entry.date) + 1;
+        state.showWinCelebration = true;
       }
 
       console.log(`✅ Move completed successfully. Game state:`, {
@@ -489,6 +503,16 @@ function createGameStore() {
   function setDifficulty(newDifficulty: string): void {
     state.difficulty = newDifficulty;
   }
+  
+  // Win celebration controls
+  function closeWinCelebration(): void {
+    state.showWinCelebration = false;
+  }
+  
+  function startNewGameFromCelebration(): void {
+    state.showWinCelebration = false;
+    createGame();
+  }
 
   return {
     // Reactive state
@@ -509,6 +533,8 @@ function createGameStore() {
     undoMove,
     clearError,
     setDifficulty,
+    closeWinCelebration,
+    startNewGameFromCelebration,
     destroy
   };
 }

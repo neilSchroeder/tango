@@ -110,6 +110,11 @@ export class GameService {
       puzzle.vConstraints, 
       puzzle.lockedTiles
     );
+    
+    // Configure solver for optimal performance with VSIDS
+    solver.setUseDomainBasedSolving(true);
+    solver.setUseCDCL(true);
+    solver.setUseVSIDS(true);
 
     const solutions = solver.findAllSolutions(1);
     if (solutions.length === 0) {
@@ -314,13 +319,18 @@ export class GameService {
       throw new Error('No active puzzle to provide hints for');
     }
 
-    // Prioritize TangoBoardSolver for detailed hint reasoning
+    // Prioritize TangoBoardSolver for detailed hint reasoning with optimal configuration
     const solver = new TangoBoardSolver(
       gameState.board,
       gameState.hConstraints,
       gameState.vConstraints,
       gameState.lockedTiles
     );
+    
+    // Configure solver for optimal performance with VSIDS
+    solver.setUseDomainBasedSolving(true);
+    solver.setUseCDCL(true);
+    solver.setUseVSIDS(true);
 
     const hintResult = solver.getHint();
     
