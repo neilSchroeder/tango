@@ -42,6 +42,7 @@ export interface LeaderboardEntry {
   time: number;
   date: string;
   formatted_time: string;
+  difficulty: string;
 }
 
 export interface LeaderboardResponse {

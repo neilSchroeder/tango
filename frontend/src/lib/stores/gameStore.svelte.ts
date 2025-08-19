@@ -269,18 +269,20 @@ function createGameStore() {
         state.validationErrors = [];
         state.delayedValidationErrors = [];
         
-        // Save to local leaderboard
+        // Save to local leaderboard with difficulty
         const entry: LeaderboardEntry = {
           time: state.elapsedTime,
           date: new Date().toISOString(),
-          formatted_time: formattedTime
+          formatted_time: formattedTime,
+          difficulty: state.difficulty
         };
         
-        const existingLeaderboard = JSON.parse(localStorage.getItem('tango-leaderboard') || '[]');
+        const leaderboardKey = `tango-leaderboard-${state.difficulty}`;
+        const existingLeaderboard = JSON.parse(localStorage.getItem(leaderboardKey) || '[]');
         existingLeaderboard.push(entry);
         existingLeaderboard.sort((a: LeaderboardEntry, b: LeaderboardEntry) => a.time - b.time);
         const updatedLeaderboard = existingLeaderboard.slice(0, 10);
-        localStorage.setItem('tango-leaderboard', JSON.stringify(updatedLeaderboard));
+        localStorage.setItem(leaderboardKey, JSON.stringify(updatedLeaderboard));
         
         // Reload leaderboard
         await loadLeaderboard();
@@ -326,8 +328,9 @@ function createGameStore() {
     try {
       state.isLoadingLeaderboard = true;
       
-      // Load leaderboard from localStorage
-      const savedLeaderboard = localStorage.getItem('tango-leaderboard');
+      // Load leaderboard from localStorage for current difficulty
+      const leaderboardKey = `tango-leaderboard-${state.difficulty}`;
+      const savedLeaderboard = localStorage.getItem(leaderboardKey);
       state.leaderboard = savedLeaderboard ? JSON.parse(savedLeaderboard) : [];
     } catch (error) {
       state.error = error instanceof Error ? error.message : 'Failed to load leaderboard';
@@ -502,6 +505,8 @@ function createGameStore() {
   // Set difficulty
   function setDifficulty(newDifficulty: string): void {
     state.difficulty = newDifficulty;
+    // Reload leaderboard for the new difficulty
+    loadLeaderboard();
   }
   
   // Win celebration controls
