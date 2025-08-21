@@ -85,21 +85,21 @@
       </p>
     </footer>
   </div>
-  
-  <!-- Win celebration components -->
-  {#if state.showWinCelebration}
-    <ConfettiAnimation />
-  {/if}
-  
-  {#if state.currentGame && state.showWinCelebration}
-    <WinCelebration 
-      game={state.currentGame}
-      difficulty={state.difficulty}
-      completionTime={state.completionTime}
-      leaderboardPosition={state.leaderboardPosition}
-      isVisible={state.showWinCelebration}
-      onclose={handleCloseCelebration}
-      onnewgame={handleNewGameFromCelebration}
-    />
-  {/if}
 </main>
+
+<!-- Win celebration components - rendered outside main to avoid stacking context issues -->
+{#if state.showWinCelebration}
+  <ConfettiAnimation />
+{/if}
+
+{#if state.currentGame && state.showWinCelebration}
+  <WinCelebration 
+    game={state.currentGame}
+    difficulty={state.difficulty}
+    completionTime={state.completionTime}
+    leaderboardPosition={state.leaderboardPosition}
+    isVisible={state.showWinCelebration}
+    onclose={handleCloseCelebration}
+    onnewgame={handleNewGameFromCelebration}
+  />
+{/if}

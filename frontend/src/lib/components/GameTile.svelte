@@ -78,14 +78,12 @@
 
   // Compute icon colors with theme-aware defaults
   const sunColor = $derived((() => {
-    if (isGameComplete) return '#22C55E'; // Green for completed
     if (hasError || hasConstraintViolation) return '#EF4444'; // Red for errors
     if (isHinted) return '#F59E0B'; // Bright amber for hints
     return '#F59E0B'; // Default amber/orange
   })());
 
   const moonColor = $derived((() => {
-    if (isGameComplete) return '#22C55E'; // Green for completed
     if (hasError || hasConstraintViolation) return '#EF4444'; // Red for errors
     if (isHinted) return '#8B5CF6'; // Bright purple for hints
     return '#6366F1'; // Default indigo/purple

@@ -288,7 +288,11 @@ function createGameStore() {
         await loadLeaderboard();
         
         // Set up win celebration
-        state.completionTime = state.elapsedTime.toString();
+        // Calculate precise completion time with milliseconds
+        const startTime = new Date(state.currentGame.start_time);
+        const now = new Date();
+        const preciseElapsedTime = (now.getTime() - startTime.getTime()) / 1000; // Keep as floating point for milliseconds
+        state.completionTime = preciseElapsedTime.toString();
         state.leaderboardPosition = updatedLeaderboard.findIndex((lb: LeaderboardEntry) => lb.time === entry.time && lb.date === entry.date) + 1;
         state.showWinCelebration = true;
       }

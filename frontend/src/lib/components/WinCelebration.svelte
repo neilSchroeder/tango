@@ -1,17 +1,13 @@
 <script lang="ts">
   import type { GameState } from '../api/types';
   
-  interface Props {
-    game: GameState;
-    difficulty: string;
-    completionTime: string;
-    leaderboardPosition?: number | null;
-    isVisible: boolean;
-    onclose?: () => void;
-    onnewgame?: () => void;
-  }
-  
-  let { game, difficulty, completionTime, leaderboardPosition, isVisible, onclose, onnewgame }: Props = $props();
+  export let game: GameState;
+  export let difficulty: string;
+  export let completionTime: string;
+  export let leaderboardPosition: number | null = null;
+  export let isVisible: boolean;
+  export let onclose: (() => void) | undefined;
+  export let onnewgame: (() => void) | undefined;
   
   function handleClose() {
     onclose?.();
@@ -22,11 +18,12 @@
   }
   
   function formatTime(timeStr: string): string {
-    // Convert seconds to MM:SS format
+    // Convert seconds to MM:SS.mmm format
     const seconds = parseFloat(timeStr);
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    const milliseconds = Math.floor((seconds % 1) * 1000);
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
   }
   
   function getDifficultyColor(difficulty: string): string {
@@ -52,23 +49,42 @@
   }
 </script>
 
-{#if isVisible}
-  <!-- Backdrop -->
-  <div 
-    class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 transition-opacity duration-300"
-    role="button"
-    tabindex="0"
-    onclick={handleClose}
-    onkeydown={(e) => e.key === 'Escape' && handleClose()}
-  ></div>
+<style>
+  .modal-backdrop {
+    background-color: rgb(249, 250, 251) !important; /* Light mode: gray-50 */
+  }
   
-  <!-- Modal -->
-  <div class="fixed inset-0 flex items-center justify-center z-50 p-4">
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full transform transition-all duration-300 scale-100">
+  :global(.dark) .modal-backdrop {
+    background-color: rgb(31, 41, 55) !important; /* Dark mode: gray-800 */
+  }
+</style>
+
+{#if isVisible}
+  <!-- Modal Container -->
+  <div 
+    class="fixed z-[9999] p-4"
+    style="position: fixed !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) !important; z-index: 9999 !important;"
+  >
+    <!-- Modal Backdrop - positioned relative to modal content -->
+    <div 
+      class="absolute rounded-3xl z-[9998] modal-backdrop" 
+      style="position: absolute !important; top: -2rem !important; left: -2rem !important; right: -2rem !important; bottom: -2rem !important; z-index: 9998 !important; border-width: 2px; border-style: solid; border-color: #4B5563 !important; border-radius: 15px;"
+      role="button" 
+      tabindex="0"
+      onclick={handleClose}
+      onkeydown={(e: KeyboardEvent) => e.key === 'Escape' && handleClose()}
+      aria-label="Close modal"
+    ></div>
+  
+    <div 
+    class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full transform transition-all duration-300 scale-100 relative z-[9999]"
+    >
       <!-- Header -->
-      <div class="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-t-2xl p-6 text-center">
-        <div class="text-6xl mb-2">🎉</div>
-        <h2 class="text-2xl font-bold text-white mb-1">Puzzle Complete!</h2>
+      <div class="rounded-t-2xl text-center">
+        <div 
+        class="text-2xl font-bold text-white mb-1"
+        style="font-size: 2rem;"
+        >🎉 Puzzle Complete! 🎉</div>
         <p class="text-yellow-100">Congratulations on solving the puzzle!</p>
       </div>
       
@@ -87,7 +103,10 @@
         <!-- Stats -->
         <div class="space-y-3">
           <!-- Completion Time -->
-          <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+          <div 
+          class="flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded-lg p-3"
+          style="padding-bottom: 1px;"
+          >
             <div class="flex items-center space-x-2">
               <span class="text-xl">⏱️</span>
               <span class="font-medium text-gray-700 dark:text-gray-300">Time</span>
@@ -99,7 +118,10 @@
           
           <!-- Leaderboard Position -->
           {#if leaderboardPosition}
-            <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+            <div 
+            class="flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded-lg p-3"
+            style="padding-bottom: 10px;"
+            >
               <div class="flex items-center space-x-2">
                 <span class="text-xl">🏆</span>
                 <span class="font-medium text-gray-700 dark:text-gray-300">Rank</span>
@@ -109,24 +131,13 @@
               </span>
             </div>
           {/if}
-          
-          <!-- Grid Size -->
-          <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
-            <div class="flex items-center space-x-2">
-              <span class="text-xl">📋</span>
-              <span class="font-medium text-gray-700 dark:text-gray-300">Grid</span>
-            </div>
-            <span class="font-semibold text-gray-600 dark:text-gray-400">
-              6×6
-            </span>
-          </div>
-        </div>
         
         <!-- Actions -->
         <div class="flex space-x-3 pt-4">
           <button
             onclick={handleNewGame}
             class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2"
+            style="border-radius: 20px; padding: 10px;"
           >
             <span class="text-lg">🎲</span>
             <span>New Game</span>
@@ -135,6 +146,7 @@
           <button
             onclick={handleClose}
             class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200"
+            style="border-radius: 20px;"
           >
             Close
           </button>
@@ -142,4 +154,5 @@
       </div>
     </div>
   </div>
+</div>
 {/if}
