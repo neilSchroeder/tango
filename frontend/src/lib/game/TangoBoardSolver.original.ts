@@ -2130,7 +2130,7 @@ export class TangoBoardSolver {
   }
 
   /**
-   * Apply solution for vertical two x pattern: A _x_ _x_ _ → A B x A x B
+   * Apply solution for vertical two x pattern: A _x_ _x_ _ → A B x A B A B
    */
   private applyVerticalTwoXPatternSolution(board: PieceType[][], row: number, col: number): boolean {
     const knownPiece = board[row][col]; // A

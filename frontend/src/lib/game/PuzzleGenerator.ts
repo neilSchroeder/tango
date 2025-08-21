@@ -1,5 +1,5 @@
 import type { PuzzleConfig, GeneratedPuzzle } from './types';
-import { TangoBoardSolver } from './TangoBoardSolver';
+import { TangoBoardSolver } from './solver/TangoBoardSolver';
 import { 
   BOARD_SIZE, 
   MAX_PIECES_PER_ROW_COL,

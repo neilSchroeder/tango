@@ -18,7 +18,7 @@ import {
   type Stats,
   PUZZLE_CONFIGS 
 } from './types';
-import { TangoBoardSolver } from './TangoBoardSolver';
+import { TangoBoardSolver } from './solver/TangoBoardSolver';
 import { PuzzleGenerator } from './PuzzleGenerator';
 import { GameLogic } from './GameLogic';
 

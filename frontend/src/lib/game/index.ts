@@ -5,21 +5,10 @@
  */
 
 export * from './types';
-export { TangoBoardSolver } from './TangoBoardSolver';
+export { TangoBoardSolver } from './solver/TangoBoardSolver';
 export { PuzzleGenerator } from './PuzzleGenerator';
 export { GameService } from './GameService';
 export { GameLogic } from './GameLogic';
-
-// Advanced template generation (optional)
-export { TemplatePuzzleGenerator } from './TemplatePuzzleGenerator';
-export { PuzzleDifficultyAnalyzer, DifficultyLevel, SolvingTechnique } from './PuzzleDifficultyAnalyzer';
-
-// Template generation types (optional)
-export type { 
-  GenerationResult,
-  PuzzleQuality,
-  DifficultyProfile
-} from './TemplatePuzzleGenerator';
 
 // Re-export common types for convenience
 export { 
