@@ -132,6 +132,14 @@ function createGameStore() {
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   });
 
+  // Helper function to format time with milliseconds for leaderboard
+  function formatTimeWithMilliseconds(seconds: number): string {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    const milliseconds = Math.floor((seconds % 1) * 1000);
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
+  }
+
   // Private helper functions
   function startTimer() {
     if (timerInterval) clearInterval(timerInterval);
@@ -270,10 +278,15 @@ function createGameStore() {
         state.delayedValidationErrors = [];
         
         // Save to local leaderboard with difficulty
+        // Calculate precise completion time with milliseconds for leaderboard
+        const startTime = new Date(state.currentGame.start_time);
+        const now = new Date();
+        const preciseTime = (now.getTime() - startTime.getTime()) / 1000; // Keep as floating point for milliseconds
+        
         const entry: LeaderboardEntry = {
-          time: state.elapsedTime,
+          time: preciseTime,
           date: new Date().toISOString(),
-          formatted_time: formattedTime,
+          formatted_time: formatTimeWithMilliseconds(preciseTime),
           difficulty: state.difficulty
         };
         
@@ -288,11 +301,8 @@ function createGameStore() {
         await loadLeaderboard();
         
         // Set up win celebration
-        // Calculate precise completion time with milliseconds
-        const startTime = new Date(state.currentGame.start_time);
-        const now = new Date();
-        const preciseElapsedTime = (now.getTime() - startTime.getTime()) / 1000; // Keep as floating point for milliseconds
-        state.completionTime = preciseElapsedTime.toString();
+        // Reuse the precise time calculation from above
+        state.completionTime = preciseTime.toString();
         state.leaderboardPosition = updatedLeaderboard.findIndex((lb: LeaderboardEntry) => lb.time === entry.time && lb.date === entry.date) + 1;
         state.showWinCelebration = true;
       }

@@ -16,6 +16,13 @@
       minute: '2-digit' 
     });
   }
+
+  function formatTimeWithMilliseconds(timeInSeconds: number): string {
+    const minutes = Math.floor(timeInSeconds / 60);
+    const remainingSeconds = Math.floor(timeInSeconds % 60);
+    const milliseconds = Math.floor((timeInSeconds % 1) * 1000);
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
+  }
   
   // Get difficulty display info
   function getDifficultyDisplay(difficulty: string) {
@@ -64,7 +71,7 @@
               </span>
               <div>
                 <div class="font-semibold text-blue-600 dark:text-blue-400 text-xs sm:text-sm transition-colors duration-300">
-                  {entry.formatted_time}
+                  {formatTimeWithMilliseconds(entry.time)}
                 </div>
                 <div class="text-xs text-gray-500 dark:text-gray-400 transition-colors duration-300">
                   {formatDate(entry.date)}
