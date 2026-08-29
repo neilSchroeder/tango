@@ -5,6 +5,7 @@
   import GameStatus from './GameStatus.svelte';
   import HintDisplay from './HintDisplay.svelte';
   import DelayedValidationErrors from './DelayedValidationErrors.svelte';
+  import { BOARD_SIZE } from '../game/types';
   import type { ConstraintType } from '../api/types';
 
   // Access state reactively using Svelte 5 runes
@@ -48,17 +49,17 @@
 <div class="game-board-container">
   {#if gameState.currentGame}
     <div class="game-board bg-white dark:bg-gray-800 p-3 sm:p-4 md:p-6 rounded-xl shadow-lg transition-colors duration-300">
-      <div class="grid grid-cols-6 gap-0 w-fit mx-auto">
-        {#each Array(6) as _, row}
-          {#each Array(6) as _, col}
+      <div class="grid gap-0 w-fit mx-auto" style="grid-template-columns: repeat({BOARD_SIZE}, 1fr);">
+        {#each Array(BOARD_SIZE) as _, row}
+          {#each Array(BOARD_SIZE) as _, col}
             <GameTile
               {row}
               {col}
               piece={gameState.currentGame.board[row][col]}
               isLocked={gameState.currentGame.locked_tiles[row][col]}
               isGameComplete={gameState.currentGame.is_complete}
-              horizontalConstraint={getConstraint(gameState.currentGame.h_constraints, row, col, 5)}
-              verticalConstraint={getConstraint(gameState.currentGame.v_constraints, row, col, 5)}
+              horizontalConstraint={getConstraint(gameState.currentGame.h_constraints, row, col, BOARD_SIZE - 1)}
+              verticalConstraint={getConstraint(gameState.currentGame.v_constraints, row, col, BOARD_SIZE)}
               hasError={errorStore.hasError(row, col)}
               hasConstraintViolation={errorStore.hasConstraintViolation(row, col)}
               isHinted={isHinted(row, col)}

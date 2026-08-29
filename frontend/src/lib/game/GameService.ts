@@ -7,9 +7,6 @@ import {
   PieceType, 
   ConstraintType, 
   createEmptyBoard,
-  createEmptyHConstraints,
-  createEmptyVConstraints,
-  createEmptyLockedTiles,
   MAX_PIECES_PER_ROW_COL,
   type GameState,
   type GameResult,
@@ -18,8 +15,8 @@ import {
   type Stats,
   PUZZLE_CONFIGS 
 } from './types';
-import { TangoBoardSolver } from './solver/TangoBoardSolver';
-import { PuzzleGenerator } from './PuzzleGenerator';
+import { TangoBoardSolver } from './solvers/TangoBoardSolver';
+import { PuzzleGenerator } from './generators/PuzzleGenerator';
 import { GameLogic } from './GameLogic';
 
 export class GameService {
@@ -31,12 +28,12 @@ export class GameService {
   } | null = null;
 
   private generator = new PuzzleGenerator();
-  private currentDifficulty: string = 'standard';
+  private currentDifficulty: string = 'medium';
 
   /**
    * Start a new game with the specified difficulty
    */
-  newGame(difficulty: string = 'standard'): GameState {
+  newGame(difficulty: string = 'medium'): GameState {
     console.log(`🎮 Starting new ${difficulty} game`);
     this.currentDifficulty = difficulty;
 
@@ -114,7 +111,6 @@ export class GameService {
     // Configure solver for optimal performance with VSIDS
     solver.setUseDomainBasedSolving(true);
     solver.setUseCDCL(true);
-    solver.setUseVSIDS(true);
 
     const solutions = solver.findAllSolutions(1);
     if (solutions.length === 0) {
@@ -330,7 +326,6 @@ export class GameService {
     // Configure solver for optimal performance with VSIDS
     solver.setUseDomainBasedSolving(true);
     solver.setUseCDCL(true);
-    solver.setUseVSIDS(true);
 
     const hintResult = solver.getHint();
     

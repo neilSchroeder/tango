@@ -61,17 +61,19 @@
         disabled={state.isCreatingGame || state.isMakingMove}
       >
         {#each difficultyOptions as option}
-          <option value={option.value} class="bg-white text-gray-900 py-2 px-4 rounded">
+          <option value={option.value} 
+          class="bg-white text-gray-900 py-2 px-4 rounded-md"
+          style="border-radius: 6px;">
             {option.label}
           </option>
         {/each}
-      </select>
-      <!-- Custom dropdown arrow -->
-      <div class="absolute inset-y-0 right-0 flex items-center pr-3 sm:pr-4 pointer-events-none">
+            </select>
+            <!-- Custom dropdown arrow -->
+            <div class="absolute inset-y-0 right-0 flex items-center pr-3 sm:pr-4 pointer-events-none">
         <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
         </svg>
-      </div>
+            </div>
     </div>
     <button
       class="px-6 sm:px-8 py-3 sm:py-4 bg-blue-500 text-white text-sm sm:text-base rounded-full hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 shadow-md hover:shadow-lg min-w-[120px] sm:min-w-[140px] min-h-[48px] font-medium"

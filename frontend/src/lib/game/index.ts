@@ -5,8 +5,9 @@
  */
 
 export * from './types';
-export { TangoBoardSolver } from './solver/TangoBoardSolver';
-export { PuzzleGenerator } from './PuzzleGenerator';
+export { TangoBoardSolver } from './solvers/TangoBoardSolver';
+export { CDCLSolver } from './solvers/CDCLSolver';
+export { PuzzleGenerator } from './generators/PuzzleGenerator';
 export { GameService } from './GameService';
 export { GameLogic } from './GameLogic';
 

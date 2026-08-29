@@ -247,7 +247,7 @@
 }
 
 .constraint:hover {
-  transform: scale(1.1);
+  transform: scale(1.5);
   background-color: var(--bg-secondary);
   border-color: var(--border-secondary);
   box-shadow: 0 2px 4px var(--shadow-color);
@@ -258,7 +258,7 @@
   height: 1rem;
   top: 50%;
   right: -0.875rem;
-  transform: translateY(-50%);
+  transform: translateY(-50%) scale(1.2);
 }
 
 .constraint--horizontal:hover {
@@ -270,7 +270,7 @@
   height: 1.5rem;
   bottom: -0.875rem;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) scale(1.1);
 }
 
 .constraint--vertical:hover {
