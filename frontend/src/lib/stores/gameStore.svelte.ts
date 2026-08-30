@@ -119,7 +119,7 @@ function createGameStore() {
   });
 
   // Timer interval reference
-  let timerInterval: number | null = null;
+  let timerInterval: ReturnType<typeof setInterval> | null = null;
 
   // Error delay timeout reference
   let errorDelayTimeout: number | null = null;
