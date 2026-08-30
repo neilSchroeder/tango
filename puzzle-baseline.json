@@ -1,0 +1,1032 @@
+{
+  "easy": {
+    "sampleSize": 20,
+    "randomSeed": 3737844653,
+    "metrics": [
+      {
+        "givenCount": 8,
+        "constraintCount": 3,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.07142857142857142,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 7,
+        "constraintCount": 7,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.3793103448275862,
+        "bottleneckCount": 2,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 6,
+        "constraintCount": 4,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.3333333333333333,
+        "bottleneckCount": 3,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 7,
+        "constraintCount": 5,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.034482758620689655,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 9,
+        "constraintCount": 4,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.037037037037037035,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 8,
+        "constraintCount": 3,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.4642857142857143,
+        "bottleneckCount": 2,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 7,
+        "constraintCount": 7,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.5862068965517241,
+        "bottleneckCount": 2,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 8,
+        "constraintCount": 3,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.10714285714285714,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 7,
+        "constraintCount": 3,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.06896551724137931,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 6,
+        "constraintCount": 6,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.36666666666666664,
+        "bottleneckCount": 2,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 6,
+        "constraintCount": 6,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.4,
+        "bottleneckCount": 5,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 6,
+        "constraintCount": 5,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.2,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 10,
+        "constraintCount": 4,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.15384615384615385,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 9,
+        "constraintCount": 4,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.037037037037037035,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 7,
+        "constraintCount": 5,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.3793103448275862,
+        "bottleneckCount": 4,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 9,
+        "constraintCount": 3,
+        "highestTier": 4,
+        "solved": true,
+        "narrowness": 0.18518518518518517,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 9,
+        "constraintCount": 2,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.1111111111111111,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 6,
+        "constraintCount": 5,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.3,
+        "bottleneckCount": 2,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 6,
+        "constraintCount": 5,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.1,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 9,
+        "constraintCount": 6,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.25925925925925924,
+        "bottleneckCount": 3,
+        "unique": true,
+        "minimal": false
+      }
+    ]
+  },
+  "medium": {
+    "sampleSize": 20,
+    "randomSeed": 3737844653,
+    "metrics": [
+      {
+        "givenCount": 6,
+        "constraintCount": 3,
+        "highestTier": 4,
+        "solved": true,
+        "narrowness": 0.26666666666666666,
+        "bottleneckCount": 2,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 6,
+        "constraintCount": 5,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.1,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 7,
+        "constraintCount": 4,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.20689655172413793,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 4,
+        "constraintCount": 7,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.03125,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 8,
+        "constraintCount": 6,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.42857142857142855,
+        "bottleneckCount": 2,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 4,
+        "constraintCount": 7,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.125,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 6,
+        "constraintCount": 4,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.4666666666666667,
+        "bottleneckCount": 4,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 8,
+        "constraintCount": 4,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.07142857142857142,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 5,
+        "constraintCount": 6,
+        "highestTier": 4,
+        "solved": true,
+        "narrowness": 0.3548387096774194,
+        "bottleneckCount": 4,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 5,
+        "constraintCount": 6,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.06451612903225806,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 8,
+        "constraintCount": 4,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.42857142857142855,
+        "bottleneckCount": 2,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 7,
+        "constraintCount": 6,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.4482758620689655,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 7,
+        "constraintCount": 3,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.3793103448275862,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 6,
+        "constraintCount": 5,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.3333333333333333,
+        "bottleneckCount": 2,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 8,
+        "constraintCount": 5,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.2857142857142857,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 7,
+        "constraintCount": 5,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.10344827586206896,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 5,
+        "constraintCount": 6,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.41935483870967744,
+        "bottleneckCount": 4,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 4,
+        "constraintCount": 6,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.3125,
+        "bottleneckCount": 2,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 6,
+        "constraintCount": 4,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.03333333333333333,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 5,
+        "constraintCount": 5,
+        "highestTier": 4,
+        "solved": true,
+        "narrowness": 0.4838709677419355,
+        "bottleneckCount": 4,
+        "unique": true,
+        "minimal": true
+      }
+    ]
+  },
+  "hard": {
+    "sampleSize": 20,
+    "randomSeed": 3737844653,
+    "metrics": [
+      {
+        "givenCount": 6,
+        "constraintCount": 5,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.03333333333333333,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 7,
+        "constraintCount": 5,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.2413793103448276,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 6,
+        "constraintCount": 4,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.13333333333333333,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 7,
+        "constraintCount": 5,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.3448275862068966,
+        "bottleneckCount": 2,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 10,
+        "constraintCount": 1,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.038461538461538464,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 10,
+        "constraintCount": 3,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.038461538461538464,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 7,
+        "constraintCount": 4,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.06896551724137931,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 8,
+        "constraintCount": 4,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.17857142857142858,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 10,
+        "constraintCount": 4,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.23076923076923078,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 9,
+        "constraintCount": 2,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.037037037037037035,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 8,
+        "constraintCount": 4,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.17857142857142858,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 9,
+        "constraintCount": 5,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.18518518518518517,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 6,
+        "constraintCount": 6,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.23333333333333334,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 8,
+        "constraintCount": 6,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.17857142857142858,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 9,
+        "constraintCount": 3,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.37037037037037035,
+        "bottleneckCount": 2,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 8,
+        "constraintCount": 4,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.03571428571428571,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 9,
+        "constraintCount": 3,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.25925925925925924,
+        "bottleneckCount": 2,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 7,
+        "constraintCount": 4,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.20689655172413793,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 8,
+        "constraintCount": 6,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.10714285714285714,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 10,
+        "constraintCount": 4,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.23076923076923078,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      }
+    ]
+  },
+  "expert": {
+    "sampleSize": 20,
+    "randomSeed": 3737844653,
+    "metrics": [
+      {
+        "givenCount": 6,
+        "constraintCount": 3,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.2,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 7,
+        "constraintCount": 4,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.27586206896551724,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 5,
+        "constraintCount": 7,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.1935483870967742,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 5,
+        "constraintCount": 6,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.5806451612903226,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 6,
+        "constraintCount": 8,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.2,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 8,
+        "constraintCount": 4,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.03571428571428571,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 8,
+        "constraintCount": 5,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.10714285714285714,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 5,
+        "constraintCount": 6,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.3548387096774194,
+        "bottleneckCount": 2,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 6,
+        "constraintCount": 5,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.06666666666666667,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 8,
+        "constraintCount": 2,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.03571428571428571,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 8,
+        "constraintCount": 6,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.25,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 4,
+        "constraintCount": 10,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.34375,
+        "bottleneckCount": 4,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 6,
+        "constraintCount": 6,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.16666666666666666,
+        "bottleneckCount": 2,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 7,
+        "constraintCount": 6,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.3103448275862069,
+        "bottleneckCount": 4,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 6,
+        "constraintCount": 6,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.06666666666666667,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 7,
+        "constraintCount": 4,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.034482758620689655,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 7,
+        "constraintCount": 4,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.13793103448275862,
+        "bottleneckCount": 2,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 7,
+        "constraintCount": 4,
+        "highestTier": 4,
+        "solved": true,
+        "narrowness": 0.3793103448275862,
+        "bottleneckCount": 3,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 4,
+        "constraintCount": 7,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.0625,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 5,
+        "constraintCount": 4,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.2903225806451613,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": false
+      }
+    ]
+  },
+  "genius": {
+    "sampleSize": 20,
+    "randomSeed": 3737844653,
+    "metrics": [
+      {
+        "givenCount": 3,
+        "constraintCount": 7,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.3333333333333333,
+        "bottleneckCount": 3,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 5,
+        "constraintCount": 5,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.2903225806451613,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 2,
+        "constraintCount": 9,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.2647058823529412,
+        "bottleneckCount": 2,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 6,
+        "constraintCount": 4,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.23333333333333334,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 3,
+        "constraintCount": 8,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.24242424242424243,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 6,
+        "constraintCount": 5,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.3333333333333333,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 6,
+        "constraintCount": 5,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.13333333333333333,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 5,
+        "constraintCount": 4,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.0967741935483871,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 5,
+        "constraintCount": 5,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.03225806451612903,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 4,
+        "constraintCount": 4,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.09375,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 6,
+        "constraintCount": 6,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.13333333333333333,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 4,
+        "constraintCount": 6,
+        "highestTier": 1,
+        "solved": true,
+        "narrowness": 0.15625,
+        "bottleneckCount": 0,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 5,
+        "constraintCount": 6,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.22580645161290322,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 5,
+        "constraintCount": 6,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.1935483870967742,
+        "bottleneckCount": 2,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 6,
+        "constraintCount": 5,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.3,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 6,
+        "constraintCount": 8,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.26666666666666666,
+        "bottleneckCount": 2,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 5,
+        "constraintCount": 8,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.5483870967741935,
+        "bottleneckCount": 2,
+        "unique": true,
+        "minimal": false
+      },
+      {
+        "givenCount": 3,
+        "constraintCount": 7,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.3333333333333333,
+        "bottleneckCount": 4,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 6,
+        "constraintCount": 6,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.3333333333333333,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": true
+      },
+      {
+        "givenCount": 5,
+        "constraintCount": 6,
+        "highestTier": 2,
+        "solved": true,
+        "narrowness": 0.25806451612903225,
+        "bottleneckCount": 1,
+        "unique": true,
+        "minimal": false
+      }
+    ]
+  }
+}
