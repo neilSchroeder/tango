@@ -31,7 +31,42 @@ export function analyzePuzzle(puzzle: GeneratedPuzzle): PuzzleMetrics {
   };
 }
 
-function isMinimal(puzzle: GeneratedPuzzle, solver: LogicalSolver): boolean {
+export function minimizePuzzle(puzzle: GeneratedPuzzle): GeneratedPuzzle {
+  const minimized = copyPuzzle(puzzle);
+  const solver = new LogicalSolver();
+  const removableItems = [
+    ...minimized.board.flatMap((row, rowIndex) => row.map((piece, colIndex) => ({ kind: 'given' as const, row: rowIndex, col: colIndex, present: piece !== PieceType.EMPTY }))),
+    ...minimized.hConstraints.flatMap((row, rowIndex) => row.map((constraint, colIndex) => ({ kind: 'horizontal' as const, row: rowIndex, col: colIndex, present: constraint !== ConstraintType.NONE }))),
+    ...minimized.vConstraints.flatMap((row, rowIndex) => row.map((constraint, colIndex) => ({ kind: 'vertical' as const, row: rowIndex, col: colIndex, present: constraint !== ConstraintType.NONE })))
+  ];
+
+  for (const item of removableItems) {
+    if (!item.present) continue;
+    const original = item.kind === 'given'
+      ? minimized.board[item.row][item.col]
+      : item.kind === 'horizontal'
+        ? minimized.hConstraints[item.row][item.col]
+        : minimized.vConstraints[item.row][item.col];
+    if (item.kind === 'given') minimized.board[item.row][item.col] = PieceType.EMPTY;
+    else if (item.kind === 'horizontal') minimized.hConstraints[item.row][item.col] = ConstraintType.NONE;
+    else minimized.vConstraints[item.row][item.col] = ConstraintType.NONE;
+
+    if (!hasUniqueSolution(minimized) || !solver.solveWithTrace(minimized.board, minimized.hConstraints, minimized.vConstraints).solved) {
+      if (item.kind === 'given') minimized.board[item.row][item.col] = original as PieceType;
+      else if (item.kind === 'horizontal') minimized.hConstraints[item.row][item.col] = original as ConstraintType;
+      else minimized.vConstraints[item.row][item.col] = original as ConstraintType;
+    }
+  }
+
+  for (let row = 0; row < minimized.board.length; row++) {
+    for (let col = 0; col < minimized.board[row].length; col++) {
+      minimized.lockedTiles[row][col] = minimized.board[row][col] !== PieceType.EMPTY;
+    }
+  }
+  return minimized;
+}
+
+export function isMinimal(puzzle: GeneratedPuzzle, solver = new LogicalSolver()): boolean {
   for (let row = 0; row < puzzle.board.length; row++) {
     for (let col = 0; col < puzzle.board[row].length; col++) {
       if (puzzle.board[row][col] !== PieceType.EMPTY) {
@@ -65,7 +100,7 @@ function isMinimal(puzzle: GeneratedPuzzle, solver: LogicalSolver): boolean {
   return true;
 }
 
-function hasUniqueSolution(puzzle: GeneratedPuzzle): boolean {
+export function hasUniqueSolution(puzzle: GeneratedPuzzle): boolean {
   return new TangoBoardSolver(puzzle.board, puzzle.hConstraints, puzzle.vConstraints, puzzle.lockedTiles)
     .findAllSolutions(2).length === 1;
 }

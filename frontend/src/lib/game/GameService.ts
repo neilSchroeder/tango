@@ -18,6 +18,7 @@ import {
 import { TangoBoardSolver } from './solvers/TangoBoardSolver';
 import { PuzzleGenerator } from './generators/PuzzleGenerator';
 import { GameLogic } from './GameLogic';
+import { PuzzleBank } from './bank/PuzzleBank';
 
 export class GameService {
   private currentPuzzle: {
@@ -28,12 +29,13 @@ export class GameService {
   } | null = null;
 
   private generator = new PuzzleGenerator();
+  private puzzleBank = new PuzzleBank();
   private currentDifficulty: string = 'medium';
 
   /**
    * Start a new game with the specified difficulty
    */
-  newGame(difficulty: string = 'medium'): GameState {
+  async newGame(difficulty: string = 'medium'): Promise<GameState> {
     console.log(`🎮 Starting new ${difficulty} game`);
     this.currentDifficulty = difficulty;
 
@@ -49,8 +51,14 @@ export class GameService {
       try {
         attempts++;
         
-        // Generate the puzzle
-        const puzzle = this.generator.generatePuzzle(config);
+        let puzzle;
+        try {
+          await this.puzzleBank.load();
+          puzzle = this.puzzleBank.next();
+        } catch (error) {
+          console.warn('Puzzle bank unavailable; generating a puzzle instead:', error);
+          puzzle = this.generator.generatePuzzle(config);
+        }
         
         // Store the complete solution for validation
         this.currentPuzzle = {

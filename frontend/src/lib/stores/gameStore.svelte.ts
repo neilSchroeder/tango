@@ -184,7 +184,7 @@ function createGameStore() {
       }
       
       // Use local game service with selected difficulty
-      const localGameState = gameService.newGame(state.difficulty);
+      const localGameState = await gameService.newGame(state.difficulty);
       
       // Convert local game state to API format
       state.currentGame = {
