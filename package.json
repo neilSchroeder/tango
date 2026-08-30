@@ -2,6 +2,7 @@
   "type": "module",
   "scripts": {
     "baseline": "npx tsx scripts/record-puzzle-baseline.ts",
+    "compare-candidates": "npx tsx scripts/compare-candidate-generators.ts",
     "analyze": "npx tsx analyze_puzzles.ts",
     "test-generation": "npx tsx test_puzzle_generation.ts",
     "test-timeouts": "npx tsx test_timeouts.js",
