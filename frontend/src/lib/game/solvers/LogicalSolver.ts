@@ -30,7 +30,6 @@ export class LogicalSolver {
       ...this.findConsecutiveMoves(board),
       ...this.findConstraintMoves(board, hConstraints, vConstraints),
       ...this.findBalanceMoves(board),
-      ...this.findUniqueRowsColumnsMoves(board),
       ...this.findNakedPairsMoves(board),
       ...this.findAdvancedPatternMoves(board, hConstraints, vConstraints),
       ...this.findForcedMoves(board, hConstraints, vConstraints)
@@ -108,7 +107,6 @@ export class LogicalSolver {
         ...this.findConsecutiveMoves(board),
         ...this.findConstraintMoves(board, hConstraints, vConstraints),
         ...this.findBalanceMoves(board),
-        ...this.findUniqueRowsColumnsMoves(board),
         ...this.findNakedPairsMoves(board),
         ...this.findAdvancedPatternMoves(board, hConstraints, vConstraints),
         ...this.findForcedMoves(board, hConstraints, vConstraints)
@@ -443,113 +441,6 @@ export class LogicalSolver {
     };
     
     return [...moves].sort((a, b) => getPriority(a) - getPriority(b));
-  }
-
-  /**
-   * Finds moves based on unique rows/columns constraints
-   */
-  private findUniqueRowsColumnsMoves(board: PieceType[][]): LogicalMove[] {
-    const moves: LogicalMove[] = [];
-    
-    // Check for nearly identical rows
-    for (let row1 = 0; row1 < this.size; row1++) {
-      for (let row2 = row1 + 1; row2 < this.size; row2++) {
-        const differences = this.findDifferences(board, row1, row2, 'row');
-        
-        // If only one or two cells differ between rows and one is known
-        if (differences.length === 2) {
-          const [diff1, diff2] = differences;
-          
-          // If exactly one of the differences is filled
-          if ((board[row1][diff1.col] !== PieceType.EMPTY && board[row2][diff2.col] === PieceType.EMPTY) ||
-              (board[row1][diff1.col] === PieceType.EMPTY && board[row2][diff2.col] !== PieceType.EMPTY)) {
-            
-            const knownRow = board[row1][diff1.col] !== PieceType.EMPTY ? row1 : row2;
-            const knownCol = board[row1][diff1.col] !== PieceType.EMPTY ? diff1.col : diff2.col;
-            const emptyRow = knownRow === row1 ? row2 : row1;
-            const emptyCol = knownCol === diff1.col ? diff2.col : diff1.col;
-            
-            // The empty cell must be different from the known cell to maintain uniqueness
-            const oppositeValue = board[knownRow][knownCol] === PieceType.SUN ? 
-                                 PieceType.MOON : PieceType.SUN;
-            
-            moves.push({
-              row: emptyRow,
-              col: emptyCol,
-              piece: oppositeValue,
-              reason: `Row uniqueness: rows ${row1} and ${row2} must differ`
-            });
-          }
-        }
-      }
-    }
-    
-    // Similar logic for columns
-    for (let col1 = 0; col1 < this.size; col1++) {
-      for (let col2 = col1 + 1; col2 < this.size; col2++) {
-        const differences = this.findDifferences(board, col1, col2, 'column');
-        
-        // If only one or two cells differ between columns and one is known
-        if (differences.length === 2) {
-          const [diff1, diff2] = differences;
-          
-          // If exactly one of the differences is filled
-          if ((board[diff1.row][col1] !== PieceType.EMPTY && board[diff2.row][col2] === PieceType.EMPTY) ||
-              (board[diff1.row][col1] === PieceType.EMPTY && board[diff2.row][col2] !== PieceType.EMPTY)) {
-            
-            const knownCol = board[diff1.row][col1] !== PieceType.EMPTY ? col1 : col2;
-            const knownRow = board[diff1.row][col1] !== PieceType.EMPTY ? diff1.row : diff2.row;
-            const emptyCol = knownCol === col1 ? col2 : col1;
-            const emptyRow = knownRow === diff1.row ? diff2.row : diff1.row;
-            
-            // The empty cell must be different from the known cell to maintain uniqueness
-            const oppositeValue = board[knownRow][knownCol] === PieceType.SUN ? 
-                                 PieceType.MOON : PieceType.SUN;
-            
-            moves.push({
-              row: emptyRow,
-              col: emptyCol,
-              piece: oppositeValue,
-              reason: `Column uniqueness: columns ${col1} and ${col2} must differ`
-            });
-          }
-        }
-      }
-    }
-    
-    return moves;
-  }
-
-  /**
-   * Finds differing positions between two rows or columns
-   */
-  private findDifferences(
-    board: PieceType[][], 
-    index1: number, 
-    index2: number, 
-    type: 'row' | 'column'
-  ): Array<{row: number, col: number}> {
-    const differences: Array<{row: number, col: number}> = [];
-    
-    if (type === 'row') {
-      for (let col = 0; col < this.size; col++) {
-        if (board[index1][col] !== board[index2][col] || 
-            board[index1][col] === PieceType.EMPTY || 
-            board[index2][col] === PieceType.EMPTY) {
-          differences.push({row: index1, col}, {row: index2, col});
-        }
-      }
-    } else {
-      for (let row = 0; row < this.size; row++) {
-        if (board[row][index1] !== board[row][index2] || 
-            board[row][index1] === PieceType.EMPTY || 
-            board[row][index2] === PieceType.EMPTY) {
-          differences.push({row, col: index1}, {row, col: index2});
-        }
-      }
-    }
-    
-    return differences;
   }
 
   /**
