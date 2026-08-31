@@ -46,7 +46,8 @@
         <p>Six by six logic</p>
         <h1>Tango</h1>
       </div>
-      <div class="header-theme">
+      <div class="header-actions">
+        <button class="stats-button" onclick={() => statsOpen = true} aria-label="Open statistics" title="Statistics">⋮</button>
         <ThemeToggle />
       </div>
     </header>
@@ -54,7 +55,7 @@
     <section class="game-stage">
       <GameBoard />
     </section>
-    <GameControls onstats={() => statsOpen = true} />
+    <GameControls />
 
     {#if gameState.currentHint}
       <HintDisplay hint={gameState.currentHint} onclose={() => gameStore.clearHint()} />

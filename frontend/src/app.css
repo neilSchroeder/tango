@@ -28,7 +28,7 @@
   --piece-size: 4rem;  /* Increased from 3.5rem to 4rem for larger pieces */
   
   /* Mobile responsiveness - bigger sizes for better mobile experience */
-  --mobile-tile-size: 4rem;
+  --mobile-tile-size: 3.5rem;
   --mobile-tile-font-size: 2rem;
   --mobile-piece-size: 3.5rem;  /* Increased from 3rem to 3.5rem */
   
@@ -117,11 +117,11 @@
 /* Responsive tile sizing */
 @media (max-width: 640px) {
   .game-tile {
-    width: min(var(--mobile-tile-size), calc((100vw - 2.25rem) / 6));
-    height: min(var(--mobile-tile-size), calc((100vw - 2.25rem) / 6));
+    width: min(var(--mobile-tile-size), calc((100vw - 4rem) / 6));
+    height: min(var(--mobile-tile-size), calc((100vw - 4rem) / 6));
     min-width: 0;
     min-height: 0;
-    font-size: min(var(--mobile-tile-font-size), calc((100vw - 2.25rem) / 12));
+    font-size: min(var(--mobile-tile-font-size), calc((100vw - 4rem) / 12));
   }
 }
 
@@ -345,7 +345,9 @@
 .brand-copy { display: grid; gap: 0.1rem; }
 .brand-copy p { margin: 0; color: var(--text-secondary); font-family: Georgia, serif; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
 .brand-copy h1 { margin: 0; font: 700 1.7rem/1 Georgia, serif; letter-spacing: 0; }
-.header-theme { margin-left: auto; }
+.header-actions { display: flex; align-items: center; gap: 0.4rem; margin-left: auto; }
+.stats-button { display: grid; width: 2.75rem; height: 2.75rem; place-items: center; border: 1px solid var(--border-primary); border-radius: 50%; background: var(--surface-raised); color: var(--text-primary); font: 1.3rem Georgia, serif; }
+.stats-button:hover { border-color: var(--moon-color); transform: translateY(-1px); }
 .game-stage { display: grid; place-items: center; min-height: 23rem; }
 .game-shell > footer { display: flex; justify-content: center; gap: 0.45rem; margin: 1.25rem 0 0; color: var(--text-tertiary); font-size: 0.7rem; }
 .game-shell > footer a { color: inherit; text-decoration: none; }
@@ -355,6 +357,14 @@
   .app-shell { padding-bottom: 2.5rem; }
   .game-shell { width: min(100%, 52rem); }
   .app-header { margin-bottom: 1.75rem; }
+}
+
+@media (max-width: 360px) {
+  .app-shell { padding-right: 0.5rem; padding-left: 0.5rem; }
+  .brand-mark { font-size: 1.65rem; }
+  .brand-mark i { font-size: 1.3rem; }
+  .brand-copy h1 { font-size: 1.45rem; }
+  .stats-button { width: 2.5rem; height: 2.5rem; }
 }
 
 /* Button styling */
