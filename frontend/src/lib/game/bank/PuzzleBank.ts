@@ -4,6 +4,7 @@ import {
   PieceType,
   type GeneratedPuzzle
 } from '../types';
+import { PuzzleStream } from './PuzzleStream';
 
 interface PuzzleBankEntry {
   id: string;
@@ -20,7 +21,7 @@ interface PuzzleBankFile {
 
 export class PuzzleBank {
   private entries: PuzzleBankEntry[] = [];
-  private nextEntry = 0;
+  private stream: PuzzleStream | null = null;
 
   async load(): Promise<void> {
     if (this.entries.length > 0) return;
@@ -29,6 +30,8 @@ export class PuzzleBank {
     const bank = await response.json() as PuzzleBankFile;
     if (bank.version !== 1 || bank.entries.length === 0) throw new Error('Puzzle bank is empty or unsupported');
     this.entries = bank.entries;
+    this.stream = new PuzzleStream(localStorage);
+    await navigator.storage?.persist?.();
   }
 
   next(difficulty: string): GeneratedPuzzle {
@@ -36,7 +39,8 @@ export class PuzzleBank {
     const tierRange = difficulty === 'easy' ? [1, 1] : difficulty === 'medium' ? [2, 2] : [3, 4];
     const entries = this.entries.filter((entry) => entry.metrics[2] >= tierRange[0] && entry.metrics[2] <= tierRange[1]);
     if (entries.length === 0) throw new Error(`Puzzle bank has no ${difficulty} entries`);
-    const entry = entries[this.nextEntry++ % entries.length];
+    if (!this.stream) throw new Error('Puzzle bank stream has not been initialized');
+    const entry = entries[this.stream.nextIndex(difficulty, entries.length)];
     return decodeEntry(entry);
   }
 }

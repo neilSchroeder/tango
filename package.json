@@ -4,6 +4,7 @@
     "baseline": "npx tsx scripts/record-puzzle-baseline.ts",
     "compare-candidates": "npx tsx scripts/compare-candidate-generators.ts",
     "build-puzzle-bank": "npx tsx scripts/build-puzzle-bank.ts",
+    "test-puzzle-stream": "npx tsx scripts/test-puzzle-stream.ts",
     "analyze": "npx tsx analyze_puzzles.ts",
     "test-generation": "npx tsx test_puzzle_generation.ts",
     "test-timeouts": "npx tsx test_timeouts.js",
