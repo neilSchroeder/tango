@@ -4,8 +4,8 @@
 
 @layer base {
   html {
-    background-color: #ffffff;
-    color: #111827;
+    background-color: #101827;
+    color: #f1f0e9;
   }
   
   html.dark {
@@ -16,6 +16,7 @@
   body {
     background-color: transparent;
     color: inherit;
+    font-family: Georgia, 'Times New Roman', serif;
   }
 }
 
@@ -42,18 +43,20 @@
   --moon-hover-bg: #dbeafe; /* Light blue background for moon hover */
 
   /* Light theme colors */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f9fafb;
-  --bg-tertiary: #f3f4f6;
-  --bg-gradient-from: #dbeafe;
-  --bg-gradient-to: #e0e7ff;
-  --text-primary: #111827;
-  --text-secondary: #6b7280;
+  --bg-primary: #f7f3ea;
+  --bg-secondary: #ece7dc;
+  --bg-tertiary: #e2dccf;
+  --surface-raised: #fffdf8;
+  --surface-hover: #f4efe4;
+  --bg-gradient-from: #f7f3ea;
+  --bg-gradient-to: #dbe5e4;
+  --text-primary: #222a35;
+  --text-secondary: #62707d;
   --text-tertiary: #9ca3af;
-  --border-primary: #d1d5db;
-  --border-secondary: #6b7280;
-  --border-hover: #9ca3af;
-  --shadow-color: rgba(0, 0, 0, 0.1);
+  --border-primary: #b8c3c8;
+  --border-secondary: #81909b;
+  --border-hover: #687988;
+  --shadow-color: rgba(38, 47, 56, 0.12);
   --error-bg: rgba(254, 202, 202, 0.6);
   --error-border: rgba(248, 113, 113, 0.7);
   --error-shadow: rgba(248, 113, 113, 0.2);
@@ -67,18 +70,20 @@
 
 /* Dark theme colors */
 :root.dark {
-  --bg-primary: #1f2937;
-  --bg-secondary: #111827;
-  --bg-tertiary: #374151;
-  --bg-gradient-from: #1f2937;
-  --bg-gradient-to: #111827;
-  --text-primary: #f9fafb;
-  --text-secondary: #d1d5db;
-  --text-tertiary: #9ca3af;
-  --border-primary: #4b5563;
-  --border-secondary: #6b7280;
-  --border-hover: #9ca3af;
-  --shadow-color: rgba(0, 0, 0, 0.3);
+  --bg-primary: #101827;
+  --bg-secondary: #162133;
+  --bg-tertiary: #202d3f;
+  --surface-raised: #182438;
+  --surface-hover: #25344a;
+  --bg-gradient-from: #101827;
+  --bg-gradient-to: #16233a;
+  --text-primary: #f1f0e9;
+  --text-secondary: #b7c3d2;
+  --text-tertiary: #8291a4;
+  --border-primary: #526176;
+  --border-secondary: #718198;
+  --border-hover: #9aa9bc;
+  --shadow-color: rgba(0, 0, 0, 0.36);
   --error-bg: rgba(127, 29, 29, 0.6);
   --error-border: rgba(185, 28, 28, 0.7);
   --error-shadow: rgba(185, 28, 28, 0.2);
@@ -95,7 +100,7 @@
   width: var(--tile-size);
   height: var(--tile-size);
   border: 2px solid var(--border-primary);
-  background-color: var(--bg-primary);
+  background-color: var(--surface-raised);
   cursor: pointer;
   transition: all 0.15s ease-in-out;
   display: flex;
@@ -112,9 +117,11 @@
 /* Responsive tile sizing */
 @media (max-width: 640px) {
   .game-tile {
-    width: var(--mobile-tile-size);
-    height: var(--mobile-tile-size);
-    font-size: var(--mobile-tile-font-size);
+    width: min(var(--mobile-tile-size), calc((100vw - 2.25rem) / 6));
+    height: min(var(--mobile-tile-size), calc((100vw - 2.25rem) / 6));
+    min-width: 0;
+    min-height: 0;
+    font-size: min(var(--mobile-tile-font-size), calc((100vw - 2.25rem) / 12));
   }
 }
 
@@ -130,7 +137,7 @@
   border-color: var(--border-hover);
   box-shadow: 0 4px 8px var(--shadow-color);
   transform: translateY(-1px);
-  background-color: var(--bg-secondary);
+  background-color: var(--surface-hover);
 }
 
 .game-tile:disabled {
@@ -320,6 +327,34 @@
 
 .constraint-different {
   color: var(--text-primary);
+}
+
+/* Board-first mobile shell */
+.app-shell {
+  min-height: 100dvh;
+  padding: max(1rem, env(safe-area-inset-top)) 0.75rem calc(5.75rem + env(safe-area-inset-bottom));
+  background: linear-gradient(145deg, var(--bg-gradient-from), var(--bg-gradient-to));
+  color: var(--text-primary);
+}
+
+.game-shell { width: min(100%, 43rem); margin: 0 auto; }
+
+.app-header { display: flex; align-items: center; gap: 0.65rem; margin: 0 auto 1.2rem; padding: 0 0.25rem; }
+.brand-mark { display: flex; align-items: center; gap: 0.15rem; color: var(--sun-color); font-size: 1.95rem; line-height: 1; }
+.brand-mark i { color: var(--moon-color); font-size: 1.55rem; font-style: normal; }
+.brand-copy { display: grid; gap: 0.1rem; }
+.brand-copy p { margin: 0; color: var(--text-secondary); font-family: Georgia, serif; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+.brand-copy h1 { margin: 0; font: 700 1.7rem/1 Georgia, serif; letter-spacing: 0; }
+.header-theme { margin-left: auto; }
+.game-stage { display: grid; place-items: center; min-height: 23rem; }
+.game-shell > footer { display: flex; justify-content: center; gap: 0.45rem; margin: 1.25rem 0 0; color: var(--text-tertiary); font-size: 0.7rem; }
+.game-shell > footer a { color: inherit; text-decoration: none; }
+.game-shell > footer a:hover { color: var(--sun-color); }
+
+@media (min-width: 760px) {
+  .app-shell { padding-bottom: 2.5rem; }
+  .game-shell { width: min(100%, 52rem); }
+  .app-header { margin-bottom: 1.75rem; }
 }
 
 /* Button styling */
