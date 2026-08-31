@@ -27,11 +27,9 @@
   }
   
   const difficultyOptions = [
-    { value: 'easy', label: '🔵 Easy', description: '6-10 pieces, 25% constraints', color: 'blue' },
-    { value: 'medium', label: '🟢 Medium', description: '4-8 pieces, 35% constraints', color: 'green' },
-    { value: 'hard', label: '🟡 Hard', description: '6-10 pieces, 25% constraints', color: 'yellow' },
-    { value: 'expert', label: '🟠 Expert', description: '4-8 pieces, 20% constraints', color: 'orange' },
-    { value: 'genius', label: '🔴 Genius', description: '2-6 pieces, 15% constraints', color: 'red' }
+    { value: 'easy', label: '🔵 Easy', description: 'Direct deductions only', color: 'blue' },
+    { value: 'medium', label: '🟢 Medium', description: 'Requires line enumeration', color: 'green' },
+    { value: 'hard', label: '🔴 Hard', description: 'Requires advanced deduction or contradiction', color: 'red' }
   ];
   
   // Get current difficulty description for tooltip

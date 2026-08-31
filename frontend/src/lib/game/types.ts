@@ -93,10 +93,6 @@ export interface HintResult {
 
 export interface PuzzleConfig {
   name: string;
-  startingPiecesMin: number;
-  startingPiecesMax: number;
-  constraintProbability: number;
-  maxAttempts: number;
   baseScore: number;
   parTime: number;
   parMoves: number;
@@ -177,60 +173,24 @@ export function createEmptyLockedTiles(): boolean[][] {
 export const PUZZLE_CONFIGS: { [key: string]: PuzzleConfig } = {
   easy: {
     name: 'Easy',
-    startingPiecesMin: 6,
-    startingPiecesMax: 10,
-    constraintProbability: 0.25,
-    maxAttempts: 10,
-    baseScore: 200,
-    parTime: 240, // 4 minutes
-    parMoves: 25,
+    baseScore: 100,
+    parTime: 300,
+    parMoves: 30,
     timeWeight: 3,
     moveWeight: 4
   },
   medium: {
     name: 'Medium',
-    startingPiecesMin: 4,
-    startingPiecesMax: 8,
-    constraintProbability: 0.35,
-    maxAttempts: 10,
-    baseScore: 300,
-    parTime: 180, // 3 minutes
-    parMoves: 20,
+    baseScore: 250,
+    parTime: 240,
+    parMoves: 25,
     timeWeight: 4,
     moveWeight: 5
   },
   hard: {
     name: 'Hard',
-    startingPiecesMin: 6,
-    startingPiecesMax: 10,
-    constraintProbability: 0.25,
-    maxAttempts: 10,
-    baseScore: 200,
-    parTime: 240, // 4 minutes
-    parMoves: 25,
-    timeWeight: 3,
-    moveWeight: 4
-  },
-  expert: {
-    name: 'Expert',
-    startingPiecesMin: 4,
-    startingPiecesMax: 8,
-    constraintProbability: 0.2,
-    maxAttempts: 10,
-    baseScore: 300,
-    parTime: 180, // 3 minutes
-    parMoves: 20,
-    timeWeight: 4,
-    moveWeight: 5
-  },
-  genius: {
-    name: 'Genius',
-    startingPiecesMin: 2,
-    startingPiecesMax: 6,
-    constraintProbability: 0.15,
-    maxAttempts: 10,
     baseScore: 500,
-    parTime: 120, // 2 minutes
+    parTime: 180,
     parMoves: 15,
     timeWeight: 5,
     moveWeight: 6

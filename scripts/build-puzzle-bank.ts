@@ -1,8 +1,8 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { analyzePuzzle, minimizePuzzle } from '../frontend/src/lib/game/analysis/PuzzleMetrics';
-import { candidateGenerators } from '../frontend/src/lib/game/generators/CandidateGenerators';
+import { candidateGenerators, defaultCandidateGenerationProfile } from '../frontend/src/lib/game/generators/CandidateGenerators';
 import { TangoBoardSolver } from '../frontend/src/lib/game/solvers/TangoBoardSolver';
-import { ConstraintType, PieceType, type GeneratedPuzzle, PUZZLE_CONFIGS } from '../frontend/src/lib/game/types';
+import { ConstraintType, PieceType, type GeneratedPuzzle } from '../frontend/src/lib/game/types';
 
 interface BankEntry {
   id: string;
@@ -31,14 +31,13 @@ console.error = () => undefined;
 const entries: BankEntry[] = [];
 const puzzleIds = new Set<string>();
 const solutionIds = new Set<string>();
-const config = PUZZLE_CONFIGS.medium;
 let attempts = 0;
 const maximumAttempts = entryCount * 100;
 
 while (entries.length < entryCount && attempts < maximumAttempts) {
   const generator = candidateGenerators[attempts % candidateGenerators.length];
   attempts++;
-  const puzzle = minimizePuzzle(generator.generate(config));
+  const puzzle = minimizePuzzle(generator.generate(defaultCandidateGenerationProfile));
   const metrics = analyzePuzzle(puzzle);
   if (!metrics.unique || !metrics.minimal || !metrics.trace.solved || metrics.trace.highestTier === null || metrics.trace.highestTier > 4) continue;
 

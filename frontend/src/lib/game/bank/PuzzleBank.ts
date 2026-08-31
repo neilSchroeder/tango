@@ -2,8 +2,7 @@ import { base } from '$app/paths';
 import {
   ConstraintType,
   PieceType,
-  type GeneratedPuzzle,
-  createEmptyLockedTiles
+  type GeneratedPuzzle
 } from '../types';
 
 interface PuzzleBankEntry {
@@ -11,6 +10,7 @@ interface PuzzleBankEntry {
   board: string;
   horizontalConstraints: string;
   verticalConstraints: string;
+  metrics: [number, number, number, number, number];
 }
 
 interface PuzzleBankFile {
@@ -31,9 +31,12 @@ export class PuzzleBank {
     this.entries = bank.entries;
   }
 
-  next(): GeneratedPuzzle {
+  next(difficulty: string): GeneratedPuzzle {
     if (this.entries.length === 0) throw new Error('Puzzle bank has not been loaded');
-    const entry = this.entries[this.nextEntry++ % this.entries.length];
+    const tierRange = difficulty === 'easy' ? [1, 1] : difficulty === 'medium' ? [2, 2] : [3, 4];
+    const entries = this.entries.filter((entry) => entry.metrics[2] >= tierRange[0] && entry.metrics[2] <= tierRange[1]);
+    if (entries.length === 0) throw new Error(`Puzzle bank has no ${difficulty} entries`);
+    const entry = entries[this.nextEntry++ % entries.length];
     return decodeEntry(entry);
   }
 }

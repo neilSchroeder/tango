@@ -28,7 +28,6 @@ export class GameService {
     lockedTiles: boolean[][];
   } | null = null;
 
-  private generator = new PuzzleGenerator();
   private puzzleBank = new PuzzleBank();
   private currentDifficulty: string = 'medium';
 
@@ -39,8 +38,7 @@ export class GameService {
     console.log(`🎮 Starting new ${difficulty} game`);
     this.currentDifficulty = difficulty;
 
-    const config = PUZZLE_CONFIGS[difficulty];
-    if (!config) {
+    if (!PUZZLE_CONFIGS[difficulty]) {
       throw new Error(`Unknown difficulty: ${difficulty}`);
     }
 
@@ -54,10 +52,9 @@ export class GameService {
         let puzzle;
         try {
           await this.puzzleBank.load();
-          puzzle = this.puzzleBank.next();
+          puzzle = this.puzzleBank.next(difficulty);
         } catch (error) {
-          console.warn('Puzzle bank unavailable; generating a puzzle instead:', error);
-          puzzle = this.generator.generatePuzzle(config);
+          throw new Error(`Puzzle bank unavailable: ${error instanceof Error ? error.message : 'unknown error'}`);
         }
         
         // Store the complete solution for validation

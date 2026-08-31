@@ -1,7 +1,6 @@
 import { writeFileSync } from 'node:fs';
 import { analyzePuzzle } from '../frontend/src/lib/game/analysis/PuzzleMetrics';
-import { candidateGenerators } from '../frontend/src/lib/game/generators/CandidateGenerators';
-import { PUZZLE_CONFIGS } from '../frontend/src/lib/game/types';
+import { candidateGenerators, defaultCandidateGenerationProfile } from '../frontend/src/lib/game/generators/CandidateGenerators';
 
 const SAMPLE_SIZE = 20;
 const RANDOM_SEED = 0x1a2b3c4d;
@@ -17,7 +16,7 @@ console.log = () => undefined;
 console.warn = () => undefined;
 
 const report = Object.fromEntries(candidateGenerators.map((generator) => {
-  const metrics = Array.from({ length: SAMPLE_SIZE }, () => analyzePuzzle(generator.generate(PUZZLE_CONFIGS.medium)));
+  const metrics = Array.from({ length: SAMPLE_SIZE }, () => analyzePuzzle(generator.generate(defaultCandidateGenerationProfile)));
   return [generator.name, summarize(metrics)];
 }));
 

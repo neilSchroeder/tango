@@ -6,22 +6,35 @@ import {
   createEmptyHConstraints,
   createEmptyLockedTiles,
   createEmptyVConstraints,
-  type GeneratedPuzzle,
-  type PuzzleConfig
+  type GeneratedPuzzle
 } from '../types';
 import { LogicalSolver } from '../solvers/LogicalSolver';
 import { ConstraintManager } from '../utils/ConstraintManager';
 import { BoardGenerator, PuzzleGenerator } from './PuzzleGenerator';
 
+export interface CandidateGenerationProfile {
+  startingPiecesMin: number;
+  startingPiecesMax: number;
+  constraintProbability: number;
+  maxAttempts: number;
+}
+
+export const defaultCandidateGenerationProfile: CandidateGenerationProfile = {
+  startingPiecesMin: 4,
+  startingPiecesMax: 8,
+  constraintProbability: 0.35,
+  maxAttempts: 10
+};
+
 export interface PuzzleCandidateGenerator {
   readonly name: string;
-  generate(config: PuzzleConfig): GeneratedPuzzle;
+  generate(config: CandidateGenerationProfile): GeneratedPuzzle;
 }
 
 export class RandomDigCandidateGenerator implements PuzzleCandidateGenerator {
   readonly name = 'random-dig';
 
-  generate(config: PuzzleConfig): GeneratedPuzzle {
+  generate(config: CandidateGenerationProfile): GeneratedPuzzle {
     return new PuzzleGenerator().generatePuzzle(config);
   }
 }
@@ -32,7 +45,7 @@ export class ConstraintFirstCandidateGenerator implements PuzzleCandidateGenerat
   private readonly logicalSolver = new LogicalSolver(BOARD_SIZE);
   private readonly constraintManager = new ConstraintManager(BOARD_SIZE);
 
-  generate(config: PuzzleConfig): GeneratedPuzzle {
+  generate(config: CandidateGenerationProfile): GeneratedPuzzle {
     const solution = this.boardGenerator.generateRandomBoard();
     const board = solution.map((row) => [...row]);
     const hConstraints = createEmptyHConstraints();
