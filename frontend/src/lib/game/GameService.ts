@@ -16,6 +16,7 @@ import {
   PUZZLE_CONFIGS 
 } from './types';
 import { TangoBoardSolver } from './solvers/TangoBoardSolver';
+import { LogicalSolver } from './solvers/LogicalSolver';
 import { PuzzleGenerator } from './generators/PuzzleGenerator';
 import { GameLogic } from './GameLogic';
 import { PuzzleBank } from './bank/PuzzleBank';
@@ -313,46 +314,30 @@ export class GameService {
   }
 
   /**
-   * Get a hint for the current board state using TangoBoardSolver with detailed reasoning
+   * Get the next deduction from the same solver used to curate the puzzle bank.
    */
   getHint(gameState: GameState): Hint {
     if (!this.currentPuzzle) {
       throw new Error('No active puzzle to provide hints for');
     }
 
-    // Prioritize TangoBoardSolver for detailed hint reasoning with optimal configuration
-    const solver = new TangoBoardSolver(
+    const trace = new LogicalSolver().solveWithTrace(
       gameState.board,
       gameState.hConstraints,
-      gameState.vConstraints,
-      gameState.lockedTiles
+      gameState.vConstraints
     );
-    
-    // Configure solver for optimal performance with VSIDS
-    solver.setUseDomainBasedSolving(true);
-    solver.setUseCDCL(true);
-
-    const hintResult = solver.getHint();
-    
-    // If TangoBoardSolver found a hint, use it (it has detailed reasoning)
-    if (hintResult.found && hintResult.row !== undefined && hintResult.col !== undefined) {
-      const hint: Hint = {
-        type: hintResult.hintType === 'logical_deduction' ? 'logical' : 
-              hintResult.hintType === 'strategic_guidance' ? 'constraint' :
-              hintResult.hintType === 'strategic_guess' ? 'rule' : 'none',
-        message: hintResult.reasoning,
-        reasoning: hintResult.reasoning,
-        position: { row: hintResult.row, col: hintResult.col }
+    const nextStep = trace.steps[0];
+    if (nextStep) {
+      return {
+        type: 'logical',
+        message: nextStep.reason,
+        reasoning: nextStep.reason,
+        position: { row: nextStep.row, col: nextStep.col },
+        suggestedPiece: nextStep.piece
       };
-
-      if (hintResult.pieceType !== undefined) {
-        hint.suggestedPiece = hintResult.pieceType;
-      }
-
-      return hint;
     }
 
-    // Fallback to GameLogic for basic hints if TangoBoardSolver doesn't find anything
+    // Retain the legacy engine only for non-deductive guidance on an invalid board.
     const gameLogic = new GameLogic();
     
     // Set up the GameLogic instance with current state
@@ -390,13 +375,10 @@ export class GameService {
       };
     }
 
-    // If neither found a hint, return the TangoBoardSolver result (which includes "no hint" reasoning)
     return {
-      type: hintResult.hintType === 'logical_deduction' ? 'logical' : 
-            hintResult.hintType === 'strategic_guidance' ? 'constraint' :
-            hintResult.hintType === 'strategic_guess' ? 'rule' : 'none',
-      message: hintResult.reasoning,
-      reasoning: hintResult.reasoning
+      type: 'none',
+      message: 'The puzzle is complete or the current board contains an inconsistency.',
+      reasoning: 'The puzzle is complete or the current board contains an inconsistency.'
     };
   }
 
