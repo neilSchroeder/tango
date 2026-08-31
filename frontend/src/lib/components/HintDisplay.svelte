@@ -3,39 +3,42 @@
 
   interface Props {
     hint: HintResponse | null;
+    onclose: () => void;
   }
 
-  let { hint }: Props = $props();
+  let { hint, onclose }: Props = $props();
 </script>
 
 {#if hint}
-  <div class="mt-4 mx-auto max-w-2xl">
-    <div class="bg-blue-50 dark:bg-blue-950/40 border-2 border-blue-300 dark:border-blue-800 rounded-xl shadow-lg p-8" style="border-radius: 1rem; box-shadow: 0 10px 25px rgba(59, 130, 246, 0.1);">
-      
-      <!-- Content -->
-      <div class="relative">
-        <!-- Header with icon -->
-        <div class="flex items-center justify-center gap-3 mb-8">
-          <h4 class="font-bold text-blue-800 dark:text-blue-200 text-lg">
-            💡 Hint
-          </h4>
-        </div>
-        
-        <!-- Hint content -->
-        <div class="space-y-6 text-center mx-4">
-          <p class="text-blue-700 dark:text-blue-300 font-medium leading-loose px-6 py-3 break-words text-wrap" style="list-style: none; list-style-type: none; display: block; margin: 0 auto; max-width: 90%; line-height: 1.8; word-wrap: break-word; word-break: break-word; hyphens: auto;">
-            {hint.reasoning}
-          </p>
-          {#if hint.found && hint.row !== undefined && hint.col !== undefined}
-            <p class="text-blue-800 dark:text-blue-200 font-semibold leading-loose px-6 py-3 break-words text-wrap" style="list-style: none; list-style-type: none; display: block; margin: 0 auto; max-width: 90%; line-height: 1.8; word-wrap: break-word; word-break: break-word; hyphens: auto;">
-              Suggested move: Place a {hint.piece_type} at row {hint.row + 1}, column {hint.col + 1}
-            </p>
-          {/if}
-        </div>
+  <div class="sheet-backdrop" role="presentation" onclick={onclose}></div>
+  <dialog class="hint-sheet" open aria-labelledby="hint-title">
+    <div class="sheet-handle"></div>
+    <header>
+      <div>
+        <p class="sheet-eyebrow">Next deduction</p>
+        <h2 id="hint-title">Hint</h2>
       </div>
-      
-      <!-- Bottom accent line -->
-      <div class="h-1 bg-blue-500 dark:bg-blue-400 rounded-full mt-8 mx-4"></div>
+      <button onclick={onclose} aria-label="Close hint">×</button>
+    </header>
+    <div class="hint-copy">
+      <p>{hint.reasoning}</p>
+      {#if hint.found && hint.row !== undefined && hint.col !== undefined}
+        <p class="suggestion">Place a <strong>{hint.piece_type}</strong> at <strong>({hint.row + 1}, {hint.col + 1})</strong>.</p>
+      {/if}
     </div>
-  </div>
+  </dialog>
 {/if}
+
+<style>
+  .sheet-backdrop { position: fixed; z-index: 39; inset: 0; background: rgb(8 13 26 / 0.52); backdrop-filter: blur(2px); }
+  .hint-sheet { position: fixed; z-index: 40; right: 0; bottom: 0; left: 0; max-height: min(55dvh, 30rem); padding: 0.65rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom)); overflow: auto; border: 1px solid var(--border-primary); border-bottom: 0; border-radius: 1rem 1rem 0 0; background: var(--surface-raised); box-shadow: 0 -20px 50px var(--shadow-color); color: var(--text-primary); }
+  .sheet-handle { width: 2.5rem; height: 0.25rem; margin: 0 auto 0.8rem; border-radius: 9px; background: var(--border-primary); }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  h2 { margin: 0; font: 700 1.4rem Georgia, serif; }
+  .sheet-eyebrow { margin: 0 0 0.15rem; color: var(--sun-color); font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+  header button { display: grid; width: 2.25rem; height: 2.25rem; place-items: center; border: 1px solid var(--border-primary); border-radius: 50%; background: transparent; color: var(--text-primary); font-size: 1.3rem; }
+  .hint-copy { display: grid; gap: 0.9rem; margin-top: 1rem; color: var(--text-secondary); font: 1rem/1.55 Georgia, serif; overflow-wrap: anywhere; }
+  .hint-copy p { margin: 0; }
+  .suggestion { padding: 0.85rem 1rem; border-left: 3px solid var(--sun-color); background: var(--surface-hover); color: var(--text-primary); }
+  @media (min-width: 760px) { .hint-sheet { right: 50%; left: auto; width: 34rem; transform: translateX(50%); border-bottom: 1px solid var(--border-primary); border-radius: 1rem; bottom: 1.5rem; } }
+</style>

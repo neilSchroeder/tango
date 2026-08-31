@@ -119,7 +119,7 @@ function createGameStore() {
   });
 
   // Timer interval reference
-  let timerInterval: number | null = null;
+  let timerInterval: ReturnType<typeof setInterval> | null = null;
 
   // Error delay timeout reference
   let errorDelayTimeout: number | null = null;
@@ -184,7 +184,7 @@ function createGameStore() {
       }
       
       // Use local game service with selected difficulty
-      const localGameState = gameService.newGame(state.difficulty);
+      const localGameState = await gameService.newGame(state.difficulty);
       
       // Convert local game state to API format
       state.currentGame = {

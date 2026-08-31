@@ -1,0 +1,22 @@
+{
+  "type": "module",
+  "scripts": {
+    "baseline": "npx tsx scripts/record-puzzle-baseline.ts",
+    "compare-candidates": "npx tsx scripts/compare-candidate-generators.ts",
+    "build-puzzle-bank": "npx tsx scripts/build-puzzle-bank.ts",
+    "test-puzzle-stream": "npx tsx scripts/test-puzzle-stream.ts",
+    "analyze": "npx tsx analyze_puzzles.ts",
+    "test-generation": "npx tsx test_puzzle_generation.ts",
+    "test-timeouts": "npx tsx test_timeouts.js",
+    "benchmark": "npx tsx benchmark-puzzle-generation.ts",
+    "profile": "npx tsx --inspect benchmark-puzzle-generation.ts",
+    "benchmark-phase2": "npx tsx benchmark-phase2-optimizations.ts",
+    "test-genius": "npx tsx test-genius-difficulty.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}

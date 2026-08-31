@@ -7,7 +7,7 @@ import { browser } from '$app/environment';
 type Theme = 'light' | 'dark';
 
 class ThemeStore {
-  private _theme = $state<Theme>('light');
+  private _theme = $state<Theme>('dark');
 
   constructor() {
     if (browser) {
@@ -24,26 +24,14 @@ class ThemeStore {
   }
 
   private initializeTheme() {
-    // Check for saved theme preference or default to system preference
+    // Default to the observatory theme until a player chooses otherwise.
     const savedTheme = localStorage.getItem('tango-theme') as Theme;
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     
     if (savedTheme) {
       this._theme = savedTheme;
-    } else if (systemPrefersDark) {
-      this._theme = 'dark';
     }
 
     this.applyTheme();
-
-    // Listen for system theme changes
-    window.matchMedia('(prefers-color-scheme: dark)')
-      .addEventListener('change', (e) => {
-        if (!localStorage.getItem('tango-theme')) {
-          this._theme = e.matches ? 'dark' : 'light';
-          this.applyTheme();
-        }
-      });
   }
 
   toggleTheme() {

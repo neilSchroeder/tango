@@ -41,7 +41,7 @@
 
 <div class="leaderboard bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 sm:p-4 transition-colors duration-300">
   <h2 class="text-lg sm:text-xl md:text-2xl font-bold mb-4 text-center text-gray-800 dark:text-gray-200 transition-colors duration-300">
-    🏆 Leaderboard
+    Leaderboard
   </h2>
   <div class="text-center mb-3">
     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors duration-300">

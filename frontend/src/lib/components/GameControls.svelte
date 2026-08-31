@@ -1,166 +1,63 @@
 <script lang="ts">
   import { gameStore } from '../stores/gameStore.svelte';
-  import { fade, scale } from 'svelte/transition';
 
-  // Access state reactively using Svelte 5 runes
   const state = $derived(gameStore.state);
 
-  async function handleNewGame() {
-    await gameStore.createGame();
-  }
-
-  function handleReset() {
-    gameStore.resetGame();
-  }
-
-  function handleUndo() {
-    gameStore.undoMove();
-  }
-
-  async function handleHint() {
-    await gameStore.getHint();
-  }
-  
-  function handleDifficultyChange(event: Event) {
-    const target = event.target as HTMLSelectElement;
-    gameStore.setDifficulty(target.value);
-  }
-  
   const difficultyOptions = [
-    { value: 'easy', label: '🔵 Easy', description: '6-10 pieces, 25% constraints', color: 'blue' },
-    { value: 'medium', label: '🟢 Medium', description: '4-8 pieces, 35% constraints', color: 'green' },
-    { value: 'hard', label: '🟡 Hard', description: '6-10 pieces, 25% constraints', color: 'yellow' },
-    { value: 'expert', label: '🟠 Expert', description: '4-8 pieces, 20% constraints', color: 'orange' },
-    { value: 'genius', label: '🔴 Genius', description: '2-6 pieces, 15% constraints', color: 'red' }
+    { value: 'easy', label: 'Easy' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'hard', label: 'Hard' }
   ];
-  
-  // Get current difficulty description for tooltip
-  const currentDifficultyDesc = $derived(difficultyOptions.find(opt => opt.value === state.difficulty)?.description || '');
 
-  // Format elapsed time for display
-  function formatTime(seconds: number): string {
-    if (isNaN(seconds) || seconds < 0) return 'N/A';
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  function setDifficulty(event: Event): void {
+    gameStore.setDifficulty((event.target as HTMLSelectElement).value);
   }
 </script>
 
-<div class="game-controls bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 sm:p-4 transition-colors duration-300">
-  <h2 class="text-base sm:text-lg md:text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200 text-center transition-colors duration-300">Game Controls</h2>
-  
-  <div class="flex gap-3 sm:gap-4 justify-center flex-wrap">
-    <!-- Difficulty Selector styled as button -->
-    <div class="relative">
-      <select
-        id="difficulty-select"
-        title={currentDifficultyDesc}
-        class="appearance-none px-6 sm:px-8 py-3 sm:py-4 bg-purple-500 text-white text-sm sm:text-base rounded-full hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 shadow-md hover:shadow-lg min-w-[120px] sm:min-w-[140px] min-h-[48px] font-medium cursor-pointer pr-10 sm:pr-12 text-center focus:outline-none focus:ring-2 focus:ring-purple-300"
-        value={state.difficulty}
-        onchange={handleDifficultyChange}
-        disabled={state.isCreatingGame || state.isMakingMove}
-      >
-        {#each difficultyOptions as option}
-          <option value={option.value} class="bg-white text-gray-900 py-2 px-4 rounded">
-            {option.label}
-          </option>
-        {/each}
-      </select>
-      <!-- Custom dropdown arrow -->
-      <div class="absolute inset-y-0 right-0 flex items-center pr-3 sm:pr-4 pointer-events-none">
-        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-        </svg>
-      </div>
-    </div>
-    <button
-      class="px-6 sm:px-8 py-3 sm:py-4 bg-blue-500 text-white text-sm sm:text-base rounded-full hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 shadow-md hover:shadow-lg min-w-[120px] sm:min-w-[140px] min-h-[48px] font-medium"
-      onclick={handleNewGame}
-      disabled={state.isCreatingGame || state.isMakingMove}
-    >
-      {#if state.isCreatingGame}
-        <span class="inline-flex items-center">
-          <svg class="animate-spin -ml-1 mr-1 sm:mr-2 h-3 w-3 text-white" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <span class="hidden sm:inline">Creating...</span>
-          <span class="sm:hidden">...</span>
-        </span>
-      {:else}
-        <span class="hidden sm:inline">🎲 New Game</span>
-        <span class="sm:hidden">🎲 New</span>
-      {/if}
+<nav class="game-dock" aria-label="Game controls">
+  <label class="difficulty-picker">
+    <span>Level</span>
+    <select value={state.difficulty} onchange={setDifficulty} disabled={state.isCreatingGame || state.isMakingMove}>
+      {#each difficultyOptions as option}
+        <option value={option.value}>{option.label}</option>
+      {/each}
+    </select>
+  </label>
+
+  <div class="dock-actions">
+    <button class="dock-button dock-button--primary" onclick={() => gameStore.createGame()} disabled={state.isCreatingGame || state.isMakingMove} aria-label="New puzzle" title="New puzzle">
+      <span aria-hidden="true">+</span>
     </button>
-
-    {#if state.currentGame}
-      <button
-        class="px-6 sm:px-8 py-3 sm:py-4 bg-gray-500 text-white text-sm sm:text-base rounded-full hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 shadow-md hover:shadow-lg min-w-[120px] sm:min-w-[140px] min-h-[48px] font-medium"
-        onclick={handleReset}
-        disabled={state.isCreatingGame || state.isMakingMove}
-      >
-        <span class="hidden sm:inline">🔄 Reset</span>
-        <span class="sm:hidden">🔄</span>
-      </button>
-      
-      <button
-        class="px-6 sm:px-8 py-3 sm:py-4 bg-orange-500 text-white text-sm sm:text-base rounded-full hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 shadow-md hover:shadow-lg min-w-[120px] sm:min-w-[140px] min-h-[48px] font-medium"
-        onclick={handleUndo}
-        disabled={state.isCreatingGame || state.isMakingMove || state.moveHistory.length === 0}
-      >
-        <span class="hidden sm:inline">↶ Undo</span>
-        <span class="sm:hidden">↶</span>
-      </button>
-      
-      {#if !state.currentGame.is_complete}
-        <button
-          class="px-6 sm:px-8 py-3 sm:py-4 bg-amber-500 text-white text-sm sm:text-base rounded-full hover:bg-amber-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 shadow-md hover:shadow-lg min-w-[120px] sm:min-w-[140px] min-h-[48px] font-medium"
-          onclick={handleHint}
-          disabled={state.isLoadingHint || state.isMakingMove}
-        >
-          {#if state.isLoadingHint}
-            <span class="inline-flex items-center">
-              <svg class="animate-spin -ml-1 mr-1 sm:mr-2 h-3 w-3 text-white" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span class="hidden sm:inline">Loading...</span>
-              <span class="sm:hidden">...</span>
-            </span>
-          {:else}
-            <span class="hidden sm:inline">💡 Hint</span>
-            <span class="sm:hidden">💡</span>
-          {/if}
-        </button>
-      {/if}
-    {/if}
+    <button class="dock-button" onclick={() => gameStore.resetGame()} disabled={!state.currentGame || state.isCreatingGame || state.isMakingMove} aria-label="Reset puzzle" title="Reset puzzle">
+      <span aria-hidden="true">↻</span>
+    </button>
+    <button class="dock-button" onclick={() => gameStore.undoMove()} disabled={!state.currentGame || state.isMakingMove || state.moveHistory.length === 0} aria-label="Undo move" title="Undo move">
+      <span aria-hidden="true">↶</span>
+    </button>
+    <button class="dock-button" onclick={() => gameStore.getHint()} disabled={!state.currentGame || state.isLoadingHint || state.isMakingMove} aria-label="Show hint" title="Show hint">
+      <span aria-hidden="true">?</span>
+    </button>
   </div>
+</nav>
 
-  <!-- Game instructions -->
-  <div class="mt-4 sm:mt-5 text-sm sm:text-base text-gray-600 dark:text-gray-400 space-y-2 text-center transition-colors duration-300">
-    <h3 class="font-semibold text-gray-800 dark:text-gray-200 text-sm sm:text-base md:text-lg transition-colors duration-300">How to Play:</h3>
-    <ul class="space-y-1 text-sm sm:text-base text-left inline-block">
-      <li>Click tiles to cycle: Empty → ☀ → ☽ → Empty</li>
-      <li>Each row/column needs exactly 3 suns and 3 moons</li>
-      <li>No 3 consecutive identical pieces</li>
-      <li>Follow constraint symbols:</li>
-      <li class="ml-4">= means tiles must match</li>
-      <li class="ml-4">× means tiles must differ</li>
-    </ul>
+{#if state.error}
+  <div class="game-error" role="alert">
+    <span>{state.error}</span>
+    <button onclick={() => gameStore.clearError()} aria-label="Dismiss error">×</button>
   </div>
+{/if}
 
-  <!-- Error display -->
-  {#if state.error}
-    <div class="mt-3 p-2 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded text-center transition-colors duration-300">
-      <div class="font-semibold text-red-800 dark:text-red-300 text-xs transition-colors duration-300">Error</div>
-      <div class="text-xs text-red-700 dark:text-red-400 mt-1 transition-colors duration-300">{state.error}</div>
-      <button
-        class="mt-2 text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
-        onclick={() => gameStore.clearError()}
-      >
-        Dismiss
-      </button>
-    </div>
-  {/if}
-
-</div>
+<style>
+  .game-dock { position: fixed; z-index: 20; right: 0.5rem; bottom: max(0.5rem, env(safe-area-inset-bottom)); left: 0.5rem; display: grid; grid-template-columns: 1fr; gap: 0.4rem; padding: 0.5rem; border: 1px solid var(--border-primary); border-radius: 0.9rem; background: color-mix(in srgb, var(--surface-raised) 94%, transparent); box-shadow: 0 12px 30px var(--shadow-color); backdrop-filter: blur(14px); }
+  .difficulty-picker { display: flex; align-items: center; justify-content: space-between; padding: 0.25rem 0.4rem; color: var(--text-secondary); font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; }
+  .difficulty-picker select { min-height: 2rem; min-width: 6rem; padding: 0 0.25rem; border: 1px solid var(--border-primary); border-radius: 0.4rem; background: var(--surface-raised); color: var(--text-primary); font: 600 0.9rem Georgia, serif; letter-spacing: 0; text-transform: none; }
+  .dock-actions { display: grid; grid-template-columns: repeat(4, minmax(2.75rem, 1fr)); gap: 0.35rem; }
+  .dock-button { display: grid; width: 100%; min-width: 2.75rem; height: 2.75rem; place-items: center; border: 1px solid var(--border-primary); border-radius: 0.65rem; background: transparent; color: var(--text-primary); font: 1.35rem Georgia, serif; }
+  .dock-button--primary { border-color: var(--sun-color); background: var(--sun-color); color: #172033; font: 1.7rem Georgia, serif; }
+  .dock-button:hover:not(:disabled) { border-color: var(--moon-color); background: var(--surface-hover); }
+  .dock-button--primary:hover:not(:disabled) { background: #ffc04a; border-color: #ffc04a; }
+  .dock-button:disabled { opacity: 0.35; }
+  .game-error { position: fixed; z-index: 30; right: 1rem; bottom: 8.75rem; left: 1rem; display: flex; justify-content: space-between; gap: 1rem; padding: 0.8rem 1rem; border: 1px solid #e85b65; border-radius: 0.65rem; background: #54252e; color: #ffe7e9; font-size: 0.85rem; }
+  .game-error button { border: 0; background: transparent; color: inherit; font-size: 1.2rem; }
+  @media (min-width: 760px) { .game-dock { position: static; width: min(100%, 34rem); margin: 1.25rem auto 0; grid-template-columns: auto 1fr; align-items: center; } .difficulty-picker { justify-content: start; gap: 0.5rem; } .game-error { bottom: 5rem; } }
+</style>

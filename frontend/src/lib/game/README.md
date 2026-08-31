@@ -50,7 +50,7 @@ The Tango game is a logic puzzle similar to Sudoku but with different rules:
 import { gameService, PieceType } from './lib/game';
 
 // Start a new game
-const gameState = gameService.newGame('standard');
+const gameState = await gameService.newGame('medium');
 
 // Make a move
 const newState = gameService.makeMove(gameState, 0, 0, PieceType.SUN);
@@ -163,7 +163,7 @@ This game logic integrates seamlessly with the SvelteKit frontend:
 // In a Svelte component
 import { gameService, type GameState, PieceType } from '$lib/game';
 
-let gameState: GameState = gameService.newGame('standard');
+let gameState: GameState = await gameService.newGame('medium');
 
 function handleCellClick(row: number, col: number) {
   if (!gameState.lockedTiles[row][col]) {
