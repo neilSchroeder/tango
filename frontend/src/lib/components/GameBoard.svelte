@@ -117,5 +117,5 @@
     }
   }
 
-  .empty-board { width: min(100%, 23rem); padding: 3rem 1rem; border: 1px dashed var(--border-primary); border-radius: 0.75rem; color: var(--text-secondary); text-align: center; }
+  .empty-board { box-sizing: border-box; width: min(calc(100% - 0.5rem), 23rem); padding: 3rem 1rem; border: 1px dashed var(--border-primary); border-radius: 0.75rem; color: var(--text-secondary); text-align: center; }
 </style>
