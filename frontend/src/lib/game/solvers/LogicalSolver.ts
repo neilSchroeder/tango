@@ -30,6 +30,14 @@ export interface SolveTrace {
 
 type Direction = 'row' | 'column';
 
+interface Contradiction {
+  reason: string;
+  forcedMoves: LogicalMove[];
+  direction?: Direction;
+  index?: number;
+  line?: PieceType[];
+}
+
 export class LogicalSolver {
   private readonly validator: BoardValidator;
   private readonly linePatterns: PieceType[][];
@@ -181,7 +189,10 @@ export class LogicalSolver {
     for (let offset = 0; offset < this.size; offset++) {
       const [row, col] = direction === 'row' ? [index, offset] : [offset, index];
       if (board[row][col] === PieceType.EMPTY && patterns.every((pattern) => pattern[offset] === patterns[0][offset])) {
-        moves.push({ ...this.move(row, col, patterns[0][offset], `Line enumeration: ${direction} has one possible symbol`), tier: LogicalTier.LINE_ENUMERATION });
+        moves.push({
+          ...this.move(row, col, patterns[0][offset], this.lineEnumerationReason(direction, index, patterns.length, row, col, patterns[0][offset])),
+          tier: LogicalTier.LINE_ENUMERATION
+        });
       }
     }
     return moves;
@@ -208,30 +219,73 @@ export class LogicalSolver {
     const moves: LogicalMove[] = [];
     for (let row = 0; row < this.size; row++) for (let col = 0; col < this.size; col++) {
       if (board[row][col] !== PieceType.EMPTY) continue;
-      const sunContradicts = this.assumptionContradicts(board, hConstraints, vConstraints, row, col, PieceType.SUN);
-      const moonContradicts = this.assumptionContradicts(board, hConstraints, vConstraints, row, col, PieceType.MOON);
-      if (sunContradicts !== moonContradicts) moves.push({ ...this.move(row, col, sunContradicts ? PieceType.MOON : PieceType.SUN, 'Depth-one contradiction'), tier: LogicalTier.CONTRADICTION });
+      const sunContradiction = this.assumptionContradiction(board, hConstraints, vConstraints, row, col, PieceType.SUN);
+      const moonContradiction = this.assumptionContradiction(board, hConstraints, vConstraints, row, col, PieceType.MOON);
+      if (Boolean(sunContradiction) !== Boolean(moonContradiction)) {
+        const rejectedPiece = sunContradiction ? PieceType.SUN : PieceType.MOON;
+        const contradiction = sunContradiction ?? moonContradiction!;
+        moves.push({
+          ...this.move(row, col, this.oppositePiece(rejectedPiece), this.contradictionReason(row, col, rejectedPiece, contradiction)),
+          tier: LogicalTier.CONTRADICTION
+        });
+      }
     }
     return moves;
   }
 
-  private assumptionContradicts(board: PieceType[][], hConstraints: ConstraintType[][], vConstraints: ConstraintType[][], row: number, col: number, piece: PieceType): boolean {
+  private assumptionContradiction(board: PieceType[][], hConstraints: ConstraintType[][], vConstraints: ConstraintType[][], row: number, col: number, piece: PieceType): Contradiction | null {
     const assumed = this.copyBoard(board);
+    const forcedMoves: LogicalMove[] = [];
     assumed[row][col] = piece;
     while (!this.validator.isBoardComplete(assumed)) {
-      if (this.hasContradiction(assumed, hConstraints, vConstraints)) return true;
+      const contradiction = this.findContradiction(assumed, hConstraints, vConstraints);
+      if (contradiction) return { ...contradiction, forcedMoves };
       const moves = this.nextMoves(assumed, hConstraints, vConstraints, LogicalTier.CROSS_LINE_PROPAGATION);
-      if (moves.length === 0) return false;
-      assumed[moves[0].row][moves[0].col] = moves[0].piece;
+      if (moves.length === 0) return null;
+      const move = moves[0];
+      forcedMoves.push(move);
+      assumed[move.row][move.col] = move.piece;
     }
-    return !this.validator.isValidCompleteBoard(assumed);
+    return this.validator.isValidCompleteBoard(assumed) ? null : { reason: 'the completed board violates a Tango rule', forcedMoves };
   }
 
   private hasContradiction(board: PieceType[][], hConstraints: ConstraintType[][], vConstraints: ConstraintType[][]): boolean {
+    return this.findContradiction(board, hConstraints, vConstraints) !== null;
+  }
+
+  private findContradiction(board: PieceType[][], hConstraints: ConstraintType[][], vConstraints: ConstraintType[][]): Omit<Contradiction, 'forcedMoves'> | null {
     for (let index = 0; index < this.size; index++) {
-      if (this.validLinePatterns(board, hConstraints, vConstraints, 'row', index).length === 0 || this.validLinePatterns(board, hConstraints, vConstraints, 'column', index).length === 0) return true;
+      if (this.validLinePatterns(board, hConstraints, vConstraints, 'row', index).length === 0) {
+        return { reason: `row ${index + 1} has no valid completion`, direction: 'row', index, line: [...board[index]] };
+      }
+      if (this.validLinePatterns(board, hConstraints, vConstraints, 'column', index).length === 0) {
+        return { reason: `column ${index + 1} has no valid completion`, direction: 'column', index, line: board.map((row) => row[index]) };
+      }
     }
-    return false;
+    return null;
+  }
+
+  private contradictionReason(row: number, col: number, rejectedPiece: PieceType, contradiction: Contradiction): string {
+    const forcedMoves = contradiction.forcedMoves.map((move) =>
+      `${this.pieceName(move.piece)} at (${move.row + 1}, ${move.col + 1})`
+    );
+    const forcedClause = forcedMoves.length > 0
+      ? ` would force ${forcedMoves.join(', ')}`
+      : '';
+    const failedLine = contradiction.line
+      ? ` After those moves, ${contradiction.reason}. Its state would be [${contradiction.line.map((piece) => piece === PieceType.EMPTY ? '_' : this.pieceName(piece)).join(', ')}], which has no pattern satisfying Tango's rules and its constraint markers.`
+      : ` This ${contradiction.reason}.`;
+    return `Depth-one contradiction: placing a ${this.pieceName(rejectedPiece)} at (${row + 1}, ${col + 1})${forcedClause}.${failedLine}`;
+  }
+
+  private pieceName(piece: PieceType): string {
+    return piece === PieceType.SUN ? 'sun' : 'moon';
+  }
+
+  private lineEnumerationReason(direction: Direction, index: number, completionCount: number, row: number, col: number, piece: PieceType): string {
+    const lineName = `${direction} ${index + 1}`;
+    const completionLabel = completionCount === 1 ? 'completion' : 'completions';
+    return `Line enumeration: ${lineName} has ${completionCount} valid ${completionLabel} after its filled cells and constraint markers are applied; every completion places a ${this.pieceName(piece)} at (${row + 1}, ${col + 1}).`;
   }
 
   private validLinePatterns(board: PieceType[][], hConstraints: ConstraintType[][], vConstraints: ConstraintType[][], direction: Direction, index: number): PieceType[][] {
